@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────
+# SentinelDB — Docker Compose (full stack)
+#
+# Usage:
+#   docker compose up --build        ← first run (builds images + inits DB)
+#   docker compose up                ← subsequent runs
+#   docker compose down -v           ← tear down + wipe DB volume
+#
+# Services:
+#   db       — PostgreSQL 16 (port 5432)
+#   backend  — FastAPI / uvicorn    (port 8000)
+#   frontend — Vite React dev       (port 5173)
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sentineldb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Init scripts run once (alphabetical) on first start
+      - ./schema/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./queries/auth.sql:/docker-entrypoint-initdb.d/02_auth.sql:ro
+      - ./queries/customer_auth.sql:/docker-entrypoint-initdb.d/03_customer_auth.sql:ro
+      - ./queries/permissions.sql:/docker-entrypoint-initdb.d/04_permissions.sql:ro
+      - ./data/seed.sql:/docker-entrypoint-initdb.d/05_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sentineldb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── FastAPI Backend ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/sentineldb
+      FRONTEND_ORIGIN: http://localhost:5173
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── React + Vite Frontend ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_TARGET: http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Rounded Green Square -->
+  <rect x="0" y="0" width="100" height="100" rx="25" fill="#16A34A" />
+  <!-- Small Leaves -->
+  <path d="M45 35 Q40 25 50 22 Q52 30 45 35 Z" fill="#BBF7D0" />
+  <path d="M55 35 Q60 25 50 22 Q48 30 55 35 Z" fill="#86EFAC" />
+  <!-- Text 67 -->
+  <text x="50" y="70" font-family="'Playfair Display', serif, 'Times New Roman'" font-size="52" font-weight="bold" font-style="italic" fill="white" text-anchor="middle" dominant-baseline="middle">67</text>
+</svg>

@@ -1,0 +1,18 @@
+# Don't send these to Docker build context
+.git
+.gitignore
+.DS_Store
+*.md
+
+# Python
+backend/.venv
+backend/__pycache__
+backend/.env
+
+# Node
+frontend/node_modules
+frontend/dist
+
+# Docs / Project overview (not needed in images)
+docs/
+Project overview/
