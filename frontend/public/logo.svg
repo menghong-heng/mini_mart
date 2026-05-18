@@ -5,5 +5,5 @@
   <path d="M45 35 Q40 25 50 22 Q52 30 45 35 Z" fill="#BBF7D0" />
   <path d="M55 35 Q60 25 50 22 Q48 30 55 35 Z" fill="#86EFAC" />
   <!-- Text 67 -->
-  <text x="50" y="70" font-family="'Playfair Display', serif, 'Times New Roman'" font-size="52" font-weight="bold" font-style="italic" fill="white" text-anchor="middle" dominant-baseline="middle">67</text>
+  <text x="50" y="52" font-family="'Playfair Display', serif, 'Times New Roman'" font-size="56" font-weight="bold" font-style="italic" fill="white" text-anchor="middle" dominant-baseline="middle">67</text>
 </svg>

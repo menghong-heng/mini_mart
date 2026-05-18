@@ -187,7 +187,7 @@ export default function Shop() {
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 animate-fade-up">
             <div className="relative aspect-square max-w-sm mx-auto">
-               <img src="https://placehold.co/500x500/FDE68A/15803D?text=About+Us" alt="About us" className="rounded-[2.5rem] object-cover w-full h-full shadow-lg" />
+               <img src="/about-us.jpg" alt="About us" className="rounded-[2.5rem] object-cover w-full h-full shadow-lg" />
             </div>
           </div>
           <div className="flex-1 animate-fade-up delay-200">
