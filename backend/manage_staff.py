@@ -28,15 +28,33 @@ load_dotenv()
 # ──────────────────────────────────────────────────────────────────
 #  Edit this list, then run:  python manage_staff.py
 #
-#  Valid roles: Admin, Sales, Cashier, Viewer
-#  "email"  — Gmail or any address; staff can sign in with email OR username
+#  Valid roles: Admin, Sales, Cashier, User
 #  "active" — set False to disable an account without deleting it
 # ──────────────────────────────────────────────────────────────────
 STAFF = [
-    {"username": "Sattha",      "email": "adminSattha@gmail.com",    "password": "12345",       "role": "Admin",   "active": True},
-    {"username": "MengHong",   "email": "sales@gmail.com",    "password": "Sales@1234",  "role": "Sales",   "active": True},
-    {"username": "cashier_01",  "email": "cashier@gmail.com",  "password": "Cash@1234",   "role": "Cashier", "active": True},
-    {"username": "viewer_01",   "email": "viewer@gmail.com",   "password": "View@1234",   "role": "Viewer",  "active": True},
+    {"username": "admin_user",   "password": "Admin@1234", "role": "Admin",   "active": True},
+    {"username": "admin_02",     "password": "Admin@1234", "role": "Admin",   "active": True},
+    {"username": "admin_03",     "password": "Admin@1234", "role": "Admin",   "active": True},
+    {"username": "admin_04",     "password": "Admin@1234", "role": "Admin",   "active": True},
+    {"username": "admin_05",     "password": "Admin@1234", "role": "Admin",   "active": True},
+
+    {"username": "sales_mgr",    "password": "Sales@1234", "role": "Sales",   "active": True},
+    {"username": "sales_02",     "password": "Sales@1234", "role": "Sales",   "active": True},
+    {"username": "sales_03",     "password": "Sales@1234", "role": "Sales",   "active": True},
+    {"username": "sales_04",     "password": "Sales@1234", "role": "Sales",   "active": True},
+    {"username": "sales_05",     "password": "Sales@1234", "role": "Sales",   "active": True},
+
+    {"username": "cashier_01",   "password": "Cash@1234",  "role": "Cashier", "active": True},
+    {"username": "cashier_02",   "password": "Cash@1234",  "role": "Cashier", "active": True},
+    {"username": "cashier_03",   "password": "Cash@1234",  "role": "Cashier", "active": True},
+    {"username": "cashier_04",   "password": "Cash@1234",  "role": "Cashier", "active": True},
+    {"username": "cashier_05",   "password": "Cash@1234",  "role": "Cashier", "active": True},
+
+    {"username": "user_01",      "password": "User@1234",  "role": "User",    "active": True},
+    {"username": "user_02",      "password": "User@1234",  "role": "User",    "active": True},
+    {"username": "user_03",      "password": "User@1234",  "role": "User",    "active": True},
+    {"username": "user_04",      "password": "User@1234",  "role": "User",    "active": True},
+    {"username": "user_05",      "password": "User@1234",  "role": "User",    "active": True},
 ]
 # ──────────────────────────────────────────────────────────────────
 
@@ -67,34 +85,23 @@ def sync_staff(conn) -> None:
 
             pw_hash = _md5(s["password"])
             role_id = role_row["role_id"]
-            email   = s.get("email") or None
-
-            # If another user already owns this email, clear it first to avoid
-            # a unique-constraint violation on the upsert below.
-            if email:
-                cur.execute(
-                    "UPDATE users SET email = NULL WHERE email = %s AND username != %s",
-                    (email, s["username"]),
-                )
-
             cur.execute(
-                """INSERT INTO users (username, password_hash, role_id, is_active, email)
-                   VALUES (%s, %s, %s, %s, %s)
+                """INSERT INTO users (username, password_hash, role_id, is_active)
+                   VALUES (%s, %s, %s, %s)
                    ON CONFLICT (username) DO UPDATE
                        SET password_hash = EXCLUDED.password_hash,
                            role_id       = EXCLUDED.role_id,
-                           is_active     = EXCLUDED.is_active,
-                           email         = EXCLUDED.email
+                           is_active     = EXCLUDED.is_active
                    RETURNING (xmax = 0) AS inserted""",
-                (s["username"], pw_hash, role_id, s["active"], email),
+                (s["username"], pw_hash, role_id, s["active"]),
             )
             row = cur.fetchone()
             if row["inserted"]:
                 added += 1
-                print(f"  ADD    {s['username']!r}  →  role={s['role']}, email={email or '—'}")
+                print(f"  ADD    {s['username']!r}  ->  role={s['role']}")
             else:
                 updated += 1
-                print(f"  UPDATE {s['username']!r}  →  role={s['role']}, email={email or '—'}, active={s['active']}")
+                print(f"  UPDATE {s['username']!r}  ->  role={s['role']}, active={s['active']}")
 
     conn.commit()
     print(f"\nDone — Added: {added}, Updated: {updated}, Skipped: {skipped}")
@@ -103,7 +110,7 @@ def sync_staff(conn) -> None:
 def list_staff(conn) -> None:
     with conn.cursor() as cur:
         cur.execute(
-            """SELECT u.username, u.email, r.role_name, u.is_active, u.last_login
+            """SELECT u.username, r.role_name, u.is_active, u.last_login
                FROM   users u
                JOIN   roles r ON r.role_id = u.role_id
                ORDER  BY r.role_name, u.username"""
@@ -114,13 +121,12 @@ def list_staff(conn) -> None:
         print("No staff users found.")
         return
 
-    print(f"\n{'USERNAME':<20} {'EMAIL':<30} {'ROLE':<12} {'ACTIVE':<8} LAST LOGIN")
-    print("─" * 82)
+    print(f"\n{'USERNAME':<20} {'ROLE':<12} {'ACTIVE':<8} LAST LOGIN")
+    print("-" * 58)
     for r in rows:
         last   = r["last_login"].strftime("%Y-%m-%d %H:%M") if r["last_login"] else "never"
         status = "yes" if r["is_active"] else "no"
-        email  = r["email"] or "—"
-        print(f"{r['username']:<20} {email:<30} {r['role_name']:<12} {status:<8} {last}")
+        print(f"{r['username']:<20} {r['role_name']:<12} {status:<8} {last}")
     print()
 
 

@@ -93,6 +93,8 @@ def update_config(
 
         row = cur.fetchone()
 
+    db.commit()
+
     return ConfigOut(
         config_key=row["config_key"],
         config_value=row["config_value"],

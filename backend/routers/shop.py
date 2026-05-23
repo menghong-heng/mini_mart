@@ -30,7 +30,8 @@ def shop_products(db=Depends(get_db)):
                    p.name,
                    c.name  AS category,
                    p.price,
-                   p.stock_qty
+                   p.stock_qty,
+                   p.image_url
             FROM   products p
             LEFT   JOIN categories c ON c.category_id = p.category_id
             WHERE  p.is_active  = TRUE
@@ -132,10 +133,67 @@ def create_my_order(
             (order_id,),
         )
 
+    db.commit()
+
     return ShopOrderCreated(
         order_id=order_id,
         total_amount=float(total),
         status="pending",
+    )
+
+
+@router.post("/orders/{order_id}/pay", response_model=ShopOrderCreated)
+def pay_my_order(
+    order_id: int,
+    customer: dict = Depends(get_current_customer),
+    db=Depends(get_db),
+):
+    """Pay an unpaid order belonging to the authenticated customer.
+
+    Marks the invoice as paid and advances the order status to 'confirmed'.
+    """
+    customer_id = customer["out_customer_id"]
+    with db.cursor() as cur:
+        cur.execute(
+            """
+            SELECT o.order_id, o.status, o.total_amount, i.status AS invoice_status
+            FROM   orders o
+            LEFT   JOIN invoices i ON i.order_id = o.order_id
+            WHERE  o.order_id = %s AND o.customer_id = %s
+            """,
+            (order_id, customer_id),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        if row["invoice_status"] == "paid":
+            raise HTTPException(status_code=400, detail="Order is already paid")
+
+        cur.execute(
+            """
+            UPDATE invoices
+            SET    paid_at = NOW(), status = 'paid'
+            WHERE  order_id = %s AND status = 'unpaid'
+            """,
+            (order_id,),
+        )
+
+        cur.execute(
+            """
+            UPDATE orders
+            SET    status = 'confirmed', updated_at = NOW()
+            WHERE  order_id = %s AND status = 'pending'
+            """,
+            (order_id,),
+        )
+
+    db.commit()
+
+    return ShopOrderCreated(
+        order_id=order_id,
+        total_amount=float(row["total_amount"]),
+        status="confirmed",
     )
 
 

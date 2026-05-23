@@ -113,6 +113,7 @@ class ProductOut(BaseModel):
     price: float
     stock_qty: int
     supplier: str | None = None
+    image_url: str | None = None
     is_active: bool
 
 
@@ -122,10 +123,23 @@ class ProductCreate(BaseModel):
     price: float = Field(ge=0)
     stock_qty: int = Field(default=0, ge=0)
     supplier_id: int | None = None
+    image_url: str | None = Field(default=None, max_length=500)
 
 
 class ProductRestock(BaseModel):
     add_qty: int = Field(gt=0, description="Units to add to current stock")
+
+
+class ProductImageOut(BaseModel):
+    image_id: int
+    label: str
+    image_url: str
+    source: str | None = None
+    created_at: datetime
+
+
+class ProductImageAssign(BaseModel):
+    image_url: str | None = Field(default=None, max_length=500)
 
 
 # ─────────────────────────────────────────────
@@ -291,6 +305,7 @@ class ShopProductOut(BaseModel):
     category: str | None = None
     price: float
     stock_qty: int
+    image_url: str | None = None
 
 
 class ShopOrderOut(BaseModel):

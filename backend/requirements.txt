@@ -1,4 +1,5 @@
 fastapi[standard]>=0.115
 psycopg[binary,pool]>=3.2
 python-dotenv>=1.0
+python-multipart>=0.0.20
 pydantic>=2.9

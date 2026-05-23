@@ -48,7 +48,7 @@ export default function Users() {
     Admin:   'bg-purple-100 text-purple-700',
     Sales:   'bg-blue-100   text-blue-700',
     Cashier: 'bg-green-100  text-green-700',
-    Viewer:  'bg-gray-100   text-gray-600',
+    User:    'bg-gray-100   text-gray-600',
   }
 
   return (

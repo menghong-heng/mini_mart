@@ -13,7 +13,7 @@ export default function Forbidden() {
           Your role{user?.role ? ` (${user.role})` : ''} does not have permission to view this page.
         </p>
         <p className="text-gray-600 text-xs mb-8">
-          67 mini mart enforces this at the database level — navigating directly won't help.
+          67 Mini Mart enforces this at the database level — navigating directly won't help.
         </p>
         <Link to="/staff/dashboard"
           className="inline-block bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white text-sm px-6 py-3 rounded-xl transition-all duration-300 font-semibold shadow-lg shadow-brand-600/25">

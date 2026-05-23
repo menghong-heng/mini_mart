@@ -77,6 +77,8 @@ def create_user(
 
         row = cur.fetchone()
 
+    db.commit()
+
     return {**row, "role_name": body.role_name}
 
 
@@ -100,6 +102,8 @@ def reassign_role(
         )
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="User not found")
+
+    db.commit()
 
     return SuccessResponse(success=True)
 
@@ -126,6 +130,8 @@ def toggle_active(
                 "UPDATE sessions SET is_active = FALSE WHERE user_id = %s AND is_active = TRUE",
                 (user_id,),
             )
+
+    db.commit()
 
     return SuccessResponse(success=True)
 

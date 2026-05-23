@@ -26,7 +26,18 @@ export const getLowStock       = (threshold = 100) =>
 export const createProduct     = body   => client.post('/products', body).then(r => r.data)
 export const restockProduct    = (id, add_qty) =>
   client.patch(`/products/${id}/restock`, { add_qty }).then(r => r.data)
+export const setProductImage   = (id, image_url) =>
+  client.patch(`/products/${id}/image`, { image_url }).then(r => r.data)
 export const discontinueProduct = id   => client.patch(`/products/${id}/discontinue`).then(r => r.data)
+export const reactivateProduct = id   => client.patch(`/products/${id}/reactivate`).then(r => r.data)
+export const getProductImages  = ()    => client.get('/product-images').then(r => r.data)
+export const uploadProductImage = (label, file, source) => {
+  const form = new FormData()
+  form.append('label', label)
+  form.append('file', file)
+  if (source) form.append('source', source)
+  return client.post('/product-images', form).then(r => r.data)
+}
 export const getCategories     = ()    => client.get('/categories').then(r => r.data)
 export const getSuppliers      = ()    => client.get('/suppliers').then(r => r.data)
 

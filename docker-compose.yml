@@ -8,7 +8,7 @@
 #
 # Services:
 #   db       — PostgreSQL 16 (port 5432)
-#   backend  — FastAPI / uvicorn    (port 8000)
+#   backend  — FastAPI / uvicorn    (host port 8001)
 #   frontend — Vite React dev       (port 5173)
 # ─────────────────────────────────────────────────────────────
 
@@ -31,6 +31,8 @@ services:
       - ./queries/customer_auth.sql:/docker-entrypoint-initdb.d/03_customer_auth.sql:ro
       - ./queries/permissions.sql:/docker-entrypoint-initdb.d/04_permissions.sql:ro
       - ./data/seed.sql:/docker-entrypoint-initdb.d/05_seed.sql:ro
+      # Keep SQL test scripts available after init for manual verification
+      - ./queries:/queries:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sentineldb"]
       interval: 5s
@@ -44,13 +46,15 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/sentineldb
       FRONTEND_ORIGIN: http://localhost:5173
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - product_images:/app/static/product-images
 
   # ── React + Vite Frontend ──────────────────────────────────
   frontend:
@@ -67,3 +71,4 @@ services:
 
 volumes:
   pgdata:
+  product_images:

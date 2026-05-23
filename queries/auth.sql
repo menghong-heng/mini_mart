@@ -189,7 +189,7 @@ $$ LANGUAGE plpgsql;
 -- SELECT * FROM fn_login('admin_user', md5('Admin@1234'), '127.0.0.1');
 -- SELECT * FROM fn_login('sales_mgr',  md5('Sales@1234'), '127.0.0.1');
 -- SELECT * FROM fn_login('cashier_01', md5('Cash@1234'),  '127.0.0.1');
--- SELECT * FROM fn_login('viewer_01',  md5('View@1234'),  '127.0.0.1');
+-- SELECT * FROM fn_login('user_01',    md5('User@1234'),  '127.0.0.1');
 
 -- Step 2 — Validate the returned token
 -- SELECT * FROM fn_validate_session('<paste token here>');

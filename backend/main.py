@@ -20,10 +20,12 @@ Prerequisites:
 """
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from db import pool
 from routers import auth
@@ -39,6 +41,8 @@ from routers.dashboard import router as dashboard_router
 load_dotenv()
 
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+PRODUCT_IMAGE_DIR = Path(__file__).resolve().parent / "static" / "product-images"
+PRODUCT_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title="SentinelDB API",
@@ -88,3 +92,9 @@ app.include_router(stock_router)
 app.include_router(sales_router)
 app.include_router(admin_router)
 app.include_router(dashboard_router)
+
+app.mount(
+    "/api/product-images",
+    StaticFiles(directory=PRODUCT_IMAGE_DIR),
+    name="product-images",
+)

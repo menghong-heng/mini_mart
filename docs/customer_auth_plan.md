@@ -118,7 +118,7 @@ STAFF = [
     {"username": "alice",   "password": "AdminPass123",   "role": "Admin",   "active": True},
     {"username": "bob",     "password": "SalesPass123",   "role": "Sales",   "active": True},
     {"username": "charlie", "password": "CashierPass123", "role": "Cashier", "active": True},
-    {"username": "dora",    "password": "ViewerPass123",  "role": "Viewer",  "active": True},
+    {"username": "dora",    "password": "UserPass123",    "role": "User",    "active": True},
 ]
 ```
 

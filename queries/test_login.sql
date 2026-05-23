@@ -122,20 +122,20 @@ SELECT fn_logout(v_token) INTO v_result;
 
 
 -- ─────────────────────────────────────────────
--- TEST 4: Viewer login — read-only
+-- TEST 4: User login — read-only
 -- ─────────────────────────────────────────────
 RAISE NOTICE '';
 RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 4 — Viewer login';
+RAISE NOTICE 'TEST 4 — User login';
 RAISE NOTICE '══════════════════════════════════════════════';
 
 SELECT out_token, out_role,
        out_can_admin, out_can_sales, out_can_stock, out_can_view
 INTO   v_token, v_role,
        v_can_admin, v_can_sales, v_can_stock, v_can_view
-FROM   fn_login('viewer_01', md5('View@1234'), '127.0.0.4');
+FROM   fn_login('user_01', md5('User@1234'), '127.0.0.4');
 
-RAISE NOTICE 'Role     : %  (expect: Viewer)', v_role;
+RAISE NOTICE 'Role     : %  (expect: User)', v_role;
 RAISE NOTICE 'can_admin: %  (expect: false)', v_can_admin;
 RAISE NOTICE 'can_sales: %  (expect: false)', v_can_sales;
 RAISE NOTICE 'can_stock: %  (expect: false)', v_can_stock;

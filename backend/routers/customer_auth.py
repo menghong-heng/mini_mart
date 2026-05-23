@@ -47,6 +47,8 @@ def signup(req: CustomerSignupRequest, request: Request, db=Depends(get_db)):
         msg = e.diag.message_primary or "Signup failed"
         raise HTTPException(status_code=400, detail=msg) from e
 
+    db.commit()
+
     return CustomerLoginResponse(
         token=row["out_token"],
         expires_at=row["out_expires"],
@@ -76,6 +78,8 @@ def login(req: CustomerLoginRequest, request: Request, db=Depends(get_db)):
     if not row:
         raise HTTPException(status_code=401, detail="Authentication failed")
 
+    db.commit()
+
     return CustomerLoginResponse(
         token=row["out_token"],
         expires_at=row["out_expires"],
@@ -90,6 +94,7 @@ def login(req: CustomerLoginRequest, request: Request, db=Depends(get_db)):
 def logout(token: str = Depends(extract_bearer), db=Depends(get_db)):
     with db.cursor() as cur:
         cur.execute("SELECT fn_customer_logout(%s)", (token,))
+    db.commit()
     return SuccessResponse(success=True)
 
 

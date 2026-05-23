@@ -16,7 +16,7 @@
 --   Admin   | TRUE  | TRUE  | TRUE  | TRUE
 --   Sales   | FALSE | TRUE  | TRUE  | TRUE
 --   Cashier | FALSE | TRUE  | FALSE | TRUE
---   Viewer  | FALSE | FALSE | FALSE | TRUE
+--   User    | FALSE | FALSE | FALSE | TRUE
 -- =============================================================
 
 DO $$
@@ -133,11 +133,11 @@ PERFORM fn_logout(v_token);
 
 
 -- ──────────────────────────────────────────────
--- ROLE: Viewer  (expect only view=TRUE)
+-- ROLE: User  (expect only view=TRUE)
 -- ──────────────────────────────────────────────
 RAISE NOTICE '';
-RAISE NOTICE '[ ROLE: Viewer ]';
-SELECT out_token INTO v_token FROM fn_login('viewer_01', md5('View@1234'), '10.0.0.4');
+RAISE NOTICE '[ ROLE: User ]';
+SELECT out_token INTO v_token FROM fn_login('user_01', md5('User@1234'), '10.0.0.4');
 
 SELECT fn_check_permission(v_token, 'admin') INTO v_actual;
 v_total := v_total + 1;
@@ -216,25 +216,25 @@ ELSE                      v_fail := v_fail + 1; RAISE NOTICE '  FAIL  cashier mu
 PERFORM fn_logout(v_token);
 
 
--- Scenario 5: Viewer tries to create an order → BLOCKED
+-- Scenario 5: User tries to create an order → BLOCKED
 RAISE NOTICE '';
-RAISE NOTICE '[ Scenario 5 ]  Viewer creates an order  →  expect BLOCKED';
-SELECT out_token INTO v_token FROM fn_login('viewer_01', md5('View@1234'), '10.0.0.4');
+RAISE NOTICE '[ Scenario 5 ]  User creates an order  →  expect BLOCKED';
+SELECT out_token INTO v_token FROM fn_login('user_01', md5('User@1234'), '10.0.0.4');
 SELECT fn_check_permission(v_token, 'sales') INTO v_actual;
 v_total := v_total + 1;
-IF v_actual = FALSE THEN v_pass := v_pass + 1; RAISE NOTICE '  PASS  BLOCKED — viewer cannot access Sales module';
-ELSE                      v_fail := v_fail + 1; RAISE NOTICE '  FAIL  viewer must be blocked from Sales module'; END IF;
+IF v_actual = FALSE THEN v_pass := v_pass + 1; RAISE NOTICE '  PASS  BLOCKED — user cannot access Sales module';
+ELSE                      v_fail := v_fail + 1; RAISE NOTICE '  FAIL  user must be blocked from Sales module'; END IF;
 PERFORM fn_logout(v_token);
 
 
--- Scenario 6: Viewer reads product list → ALLOWED
+-- Scenario 6: User reads product list → ALLOWED
 RAISE NOTICE '';
-RAISE NOTICE '[ Scenario 6 ]  Viewer reads product list  →  expect ALLOWED';
-SELECT out_token INTO v_token FROM fn_login('viewer_01', md5('View@1234'), '10.0.0.4');
+RAISE NOTICE '[ Scenario 6 ]  User reads product list  →  expect ALLOWED';
+SELECT out_token INTO v_token FROM fn_login('user_01', md5('User@1234'), '10.0.0.4');
 SELECT fn_check_permission(v_token, 'view') INTO v_actual;
 v_total := v_total + 1;
-IF v_actual = TRUE  THEN v_pass := v_pass + 1; RAISE NOTICE '  PASS  ALLOWED — viewer can access View module';
-ELSE                      v_fail := v_fail + 1; RAISE NOTICE '  FAIL  viewer should be allowed into View module'; END IF;
+IF v_actual = TRUE  THEN v_pass := v_pass + 1; RAISE NOTICE '  PASS  ALLOWED — user can access View module';
+ELSE                      v_fail := v_fail + 1; RAISE NOTICE '  FAIL  user should be allowed into View module'; END IF;
 PERFORM fn_logout(v_token);
 
 

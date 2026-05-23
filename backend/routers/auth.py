@@ -48,6 +48,8 @@ def login(req: LoginRequest, request: Request, db=Depends(get_db)):
     if not row:
         raise HTTPException(status_code=401, detail="Authentication failed")
 
+    db.commit()
+
     return LoginResponse(
         token=row["out_token"],
         expires_at=row["out_expires"],
@@ -65,6 +67,7 @@ def login(req: LoginRequest, request: Request, db=Depends(get_db)):
 def logout(user: dict = Depends(get_current_user), db=Depends(get_db)):
     with db.cursor() as cur:
         cur.execute("SELECT fn_logout(%s)", (user["token"],))
+    db.commit()
     return SuccessResponse(success=True)
 
 

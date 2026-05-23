@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 
 const ROLE_COLOR = {
@@ -29,7 +29,7 @@ export default function Navbar() {
       <div className="flex items-center gap-1.5">
         <div className="flex items-center gap-2.5 mr-6">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center">
-            <img src="/logo.svg" alt="67 mini" className="w-10 h-10" />
+            <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-10 h-10" />
           </div>
           <span className="font-serif font-bold text-sm tracking-wide text-white hidden sm:inline">
             Staff Portal
@@ -43,8 +43,12 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <Link to="/"
+          className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 px-3 py-2 rounded-xl transition-all duration-300 font-medium text-gray-400 hover:text-white">
+          🛍️ Shop
+        </Link>
         <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium leading-none">{user?.username}</p>
+          <p className="text-sm font-medium leading-none capitalize">{user?.username}</p>
           <p className={`text-xs mt-1 ${ROLE_COLOR[user?.role] ?? 'text-gray-400'}`}>{user?.role}</p>
         </div>
         <button onClick={handleLogout}

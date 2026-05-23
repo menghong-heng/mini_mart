@@ -1,0 +1,137 @@
+67 Mini Mart - Demo Users
+=========================
+
+Staff login URL:
+http://localhost:5173/staff/login
+
+Customer shop URL:
+http://localhost:5173/
+
+API docs:
+http://localhost:8001/docs
+
+
+STAFF LOGIN ACCOUNTS
+--------------------
+
+Admin role - full access to every staff module
+Password for all Admin accounts: Admin@1234
+
+1. admin_user
+2. admin_02
+3. admin_03
+4. admin_04
+5. admin_05
+
+
+Sales role - sales, stock, and view access
+Password for all Sales accounts: Sales@1234
+
+1. sales_mgr
+2. sales_02
+3. sales_03
+4. sales_04
+5. sales_05
+
+
+Cashier role - sales and view access
+Password for all Cashier accounts: Cash@1234
+
+1. cashier_01
+2. cashier_02
+3. cashier_03
+4. cashier_04
+5. cashier_05
+
+
+User role - read-only view access
+Password for all User accounts: User@1234
+
+1. user_01
+2. user_02
+3. user_03
+4. user_04
+5. user_05
+
+
+DISABLED TEST ACCOUNT
+---------------------
+
+This account exists only to demonstrate that disabled users cannot log in.
+
+Username: inactive_usr
+Password: Old@1234
+Role: User
+Status: Disabled
+
+
+CUSTOMER DEMO DATA
+------------------
+
+These customers are seeded in the database for orders and sales demos.
+They are customer records, not customer login accounts. Customer login accounts
+can be created from the customer signup page:
+http://localhost:5173/signup
+
+1. Sophea Chan
+   Phone: +855-12-111-222
+   Email: sophea@example.com
+   Address: Phnom Penh, Cambodia
+
+2. Dara Nguyen
+   Phone: +855-17-333-444
+   Email: dara@example.com
+   Address: Siem Reap, Cambodia
+
+3. Maly Sok
+   Phone: +855-89-555-666
+   Email: maly@example.com
+   Address: Kampot, Cambodia
+
+4. Rith Phal
+   Phone: +855-77-777-888
+   Email: rith@example.com
+   Address: Battambang, Cambodia
+
+5. Chanthy Vong
+   Phone: +855-96-999-000
+   Email: chanthy@example.com
+   Address: Phnom Penh, Cambodia
+
+
+ROLE PERMISSIONS
+----------------
+
+Admin:
+- Admin module: yes
+- Sales module: yes
+- Stock module: yes
+- View module: yes
+
+Sales:
+- Admin module: no
+- Sales module: yes
+- Stock module: yes
+- View module: yes
+
+Cashier:
+- Admin module: no
+- Sales module: yes
+- Stock module: no
+- View module: yes
+
+User:
+- Admin module: no
+- Sales module: no
+- Stock module: no
+- View module: yes
+
+
+NOTES
+-----
+
+- Staff passwords are stored in PostgreSQL as MD5 hashes for demo purposes.
+- Staff accounts are seeded by data/seed.sql on a fresh database.
+- Staff accounts can be synced into an existing database with:
+  docker compose exec backend python manage_staff.py
+- Customer accounts are separate from staff accounts and use separate tables.

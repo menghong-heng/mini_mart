@@ -25,3 +25,7 @@ export const shopGetOrder = id =>
 
 export const placeOrder = items =>
   customerClient.post('/shop/orders', { items }).then(r => r.data)
+
+export const payOrder = id =>
+  customerClient.post(`/shop/orders/${id}/pay`).then(r => r.data)
+

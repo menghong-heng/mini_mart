@@ -62,8 +62,8 @@ export default function Dashboard() {
         {/* Welcome */}
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h1 className="text-3xl font-serif font-bold text-white">Welcome back, {user?.username}</h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">67 mini mart Staff Portal — here's your access summary</p>
+            <h1 className="text-3xl font-serif font-bold text-white">Welcome back, <span className="capitalize">{user?.username}</span></h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">67 Mini Mart Staff Portal — here's your access summary</p>
           </div>
           <span className={`text-sm px-4 py-2 rounded-xl font-semibold ${ROLE_TAG[user?.role] ?? 'bg-gray-500/10 text-gray-400'}`}>
             {user?.role}

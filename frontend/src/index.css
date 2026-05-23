@@ -17,6 +17,9 @@
 }
 
 @layer components {
+  .brand-logo {
+    @apply object-contain shrink-0;
+  }
   .glass-card {
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(16px);

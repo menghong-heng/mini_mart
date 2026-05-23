@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from '../components/ThemeToggle'
 import { useCustomerAuth } from '../auth/CustomerAuthContext'
 
 export default function Signup() {
   const { customer, signup } = useCustomerAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from || '/'
   const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' })
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [alreadyExists, setAlreadyExists] = useState(false)
 
   useEffect(() => {
-    if (customer) navigate('/orders/mine', { replace: true })
-  }, [customer, navigate])
+    if (customer) navigate(from, { replace: true })
+  }, [customer, navigate, from])
 
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }))
 
@@ -24,7 +26,7 @@ export default function Signup() {
     setLoading(true)
     try {
       await signup(form.email, form.password, form.full_name, form.phone || null)
-      navigate('/orders/mine')
+      navigate(from)
     } catch (err) {
       const msg = err.response?.data?.detail ?? 'Sign-up failed — please try again.'
       if (msg.toLowerCase().includes('already exists')) setAlreadyExists(true)
@@ -34,7 +36,8 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen flex font-sans transition-colors relative">
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+        <Link to="/staff/login" className="text-sm font-medium text-gray-500 dark:text-gray-300 hover:text-brand-600 transition-colors">Staff Portal</Link>
         <ThemeToggle />
       </div>
       {/* Left — Brand Panel */}
@@ -45,7 +48,7 @@ export default function Signup() {
         </div>
         <div className="relative z-10 text-center text-white max-w-md">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-8">
-            <img src="/logo.svg" alt="67 mini" className="w-20 h-20 drop-shadow-xl" />
+            <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-20 h-20 drop-shadow-xl" />
           </div>
           <h2 className="font-serif text-4xl font-bold mb-4">Join Our<br />Community</h2>
           <p className="text-gray-300 leading-relaxed mb-8">
@@ -75,15 +78,15 @@ export default function Signup() {
       <div className="flex-1 bg-cream-50 dark:bg-gray-900 flex flex-col items-center justify-center px-6 py-12 transition-colors">
         <Link to="/" className="flex items-center gap-2 mb-10 lg:hidden">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center">
-            <img src="/logo.svg" alt="67 mini" className="w-12 h-12" />
+            <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-12 h-12" />
           </div>
-          <span className="text-xl font-serif font-bold text-gray-900 dark:text-white">67 mini mart</span>
+          <span className="text-xl font-serif font-bold text-gray-900 dark:text-white">67 Mini Mart</span>
         </Link>
 
         <div className="bg-white dark:bg-gray-950 rounded-3xl shadow-sm border border-cream-200 dark:border-gray-800 p-8 w-full max-w-sm animate-fade-up">
           <div className="mb-8 text-center">
             <h1 className="font-serif text-3xl font-bold text-gray-900 dark:text-white">Create account</h1>
-            <p className="text-gray-400 text-sm mt-2">Join 67 mini mart and track your orders</p>
+            <p className="text-gray-400 text-sm mt-2">Join 67 Mini Mart and track your orders</p>
           </div>
 
           {alreadyExists ? (

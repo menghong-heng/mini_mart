@@ -5,6 +5,7 @@ import { placeOrder, shopGetProducts } from '../api/customerEndpoints'
 import { useCustomerAuth } from '../auth/CustomerAuthContext'
 
 const CATEGORY_EMOJI = { Electronics: '💻', Beverages: '🥤', Stationery: '📝', Clothing: '👕' }
+const fallbackImage = () => '/product-images/product-placeholder.png'
 
 const FEATURES = [
   { icon: '🛍️', title: 'Curated Selection', desc: 'Every product is handpicked for quality. We partner with trusted suppliers to bring you the best.' },
@@ -35,6 +36,40 @@ export default function Shop() {
     shopGetProducts().then(setProducts).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
+  const saveCartFor = (newCart, currentCustomer) => {
+    const key = `sentinel_cart_customer_${currentCustomer?.customer_id || 'guest'}`
+    localStorage.setItem(key, JSON.stringify(newCart))
+  }
+
+  useEffect(() => {
+    const custId = customer?.customer_id || 'guest'
+    const key = `sentinel_cart_customer_${custId}`
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      try {
+        setCart(JSON.parse(stored))
+      } catch {
+        setCart([])
+      }
+    } else {
+      if (custId !== 'guest') {
+        const guestCartStr = localStorage.getItem('sentinel_cart_customer_guest')
+        if (guestCartStr) {
+          try {
+            const guestCart = JSON.parse(guestCartStr)
+            if (guestCart.length > 0) {
+              setCart(guestCart)
+              saveCartFor(guestCart, customer)
+              localStorage.removeItem('sentinel_cart_customer_guest')
+              return
+            }
+          } catch {}
+        }
+      }
+      setCart([])
+    }
+  }, [customer])
+
   const stockFor = (id) => products.find(p => p.product_id === id)?.stock_qty ?? 0
   const qtyInCart = (id) => cart.find(i => i.product_id === id)?.quantity ?? 0
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
@@ -51,13 +86,32 @@ export default function Shop() {
     setOrderError(null)
     setCart(prev => {
       const idx = prev.findIndex(i => i.product_id === product.product_id)
+      let next
       if (idx >= 0) {
         if (prev[idx].quantity >= product.stock_qty) return prev
-        const next = [...prev]
+        next = [...prev]
         next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 }
-        return next
+      } else {
+        next = [...prev, { product_id: product.product_id, name: product.name, price: Number(product.price), quantity: 1 }]
       }
-      return [...prev, { product_id: product.product_id, name: product.name, price: Number(product.price), quantity: 1 }]
+      saveCartFor(next, customer)
+      return next
+    })
+    setCartOpen(true)
+  }
+
+  const buyNow = (product) => {
+    setOrderError(null)
+    setCart(prev => {
+      const idx = prev.findIndex(i => i.product_id === product.product_id)
+      let next
+      if (idx >= 0) {
+        next = prev
+      } else {
+        next = [...prev, { product_id: product.product_id, name: product.name, price: Number(product.price), quantity: 1 }]
+      }
+      saveCartFor(next, customer)
+      return next
     })
     setCartOpen(true)
   }
@@ -65,16 +119,24 @@ export default function Shop() {
   const changeQty = (productId, delta) => {
     setCart(prev => {
       const stock = stockFor(productId)
-      return prev.map(i => {
+      const next = prev.map(i => {
         if (i.product_id !== productId) return i
-        const next = i.quantity + delta
-        if (next > stock) return i
-        return { ...i, quantity: next }
+        const nextQty = i.quantity + delta
+        if (nextQty > stock) return i
+        return { ...i, quantity: nextQty }
       }).filter(i => i.quantity > 0)
+      saveCartFor(next, customer)
+      return next
     })
   }
 
-  const removeFromCart = (id) => setCart(prev => prev.filter(i => i.product_id !== id))
+  const removeFromCart = (id) => {
+    setCart(prev => {
+      const next = prev.filter(i => i.product_id !== id)
+      saveCartFor(next, customer)
+      return next
+    })
+  }
 
   const handlePlaceOrder = async () => {
     if (!customer || cart.length === 0 || placing) return
@@ -83,6 +145,7 @@ export default function Shop() {
     try {
       await placeOrder(cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })))
       setCart([])
+      saveCartFor([], customer)
       setCartOpen(false)
       setToast('Order placed — redirecting to your orders…')
       setTimeout(() => navigate('/orders/mine'), 1200)
@@ -102,9 +165,9 @@ export default function Shop() {
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center">
-              <img src="/logo.svg" alt="67 mini" className="w-9 h-9" />
+              <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-9 h-9" />
             </div>
-            <span className="font-serif font-bold text-xl text-gray-900 dark:text-white">67 mini mart</span>
+            <span className="font-serif font-bold text-xl text-gray-900 dark:text-white">67 Mini Mart</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#shop" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-brand-600 transition-colors">Shop</a>
@@ -113,13 +176,14 @@ export default function Shop() {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <Link to="/staff/login" className="hidden sm:inline text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors">Staff Portal</Link>
             <button onClick={() => setCartOpen(true)} className="relative text-sm bg-brand-600 text-white hover:bg-brand-700 px-4 py-2 rounded-xl transition-all duration-300 font-medium hover:shadow-lg hover:shadow-brand-600/20">
               🛒 Cart
               {cartCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-warm-400 text-gray-900 text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>}
             </button>
             {customer ? (
               <>
-                <span className="text-gray-500 text-sm hidden sm:inline">Hi, <span className="font-semibold text-gray-800">{customer.full_name}</span></span>
+                <span className="text-gray-500 dark:text-gray-400 text-sm hidden sm:inline">Hi, <span className="font-semibold text-gray-800 dark:text-gray-200 capitalize">{customer.full_name}</span></span>
                 <Link to="/orders/mine" className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">My Orders</Link>
                 <button onClick={logout} className="text-sm text-gray-400 hover:text-red-500 transition-colors">Sign out</button>
               </>
@@ -142,7 +206,7 @@ export default function Shop() {
               Fresh Finds,<br /><span className="gradient-text-warm">Every Day</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed max-w-lg mb-8">
-              Quality products curated just for you. From everyday essentials to hidden gems — shop smarter at your local 67 mini mart.
+              Quality products curated just for you. From everyday essentials to hidden gems — shop smarter at your local 67 Mini Mart.
             </p>
             <div className="flex gap-4">
               <a href="#shop" className="btn-primary inline-block">Browse Products</a>
@@ -194,7 +258,7 @@ export default function Shop() {
             <span className="text-sm font-semibold text-brand-600 uppercase tracking-widest">About Us</span>
             <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-3 mb-6">Your Neighborhood,<br />Deserves Better</h2>
             <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-              67 mini mart was born from a simple idea — your neighborhood deserves better. Founded in 2024, we've been on a mission to bring curated, quality products right to your doorstep. From everyday essentials to hidden gems, we handpick every item on our shelves so you don't have to compromise on quality or convenience.
+              67 Mini Mart was born from a simple idea — your neighborhood deserves better. Founded in 2024, we've been on a mission to bring curated, quality products right to your doorstep. From everyday essentials to hidden gems, we handpick every item on our shelves so you don't have to compromise on quality or convenience.
             </p>
             <blockquote className="border-l-4 border-brand-400 pl-5 italic font-serif text-gray-600 dark:text-gray-300 text-lg">
               "Supporting local communities with accessible, quality products is, and will always be, our core mission."
@@ -239,7 +303,9 @@ export default function Shop() {
                     {inCart > 0 && (
                       <span className="absolute top-3 right-3 bg-brand-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm">{inCart}</span>
                     )}
-                    <img src={`https://placehold.co/400x300/F0FDF4/16A34A?text=${encodeURIComponent(p.name)}`} alt={p.name} className="w-full h-40 object-cover rounded-xl mb-4 border border-cream-200/50 dark:border-gray-800" />
+                    <img src={p.image_url || fallbackImage(p.name)} alt={p.name}
+                      onError={e => { e.currentTarget.src = fallbackImage(p.name) }}
+                      className="w-full h-40 object-cover rounded-xl mb-4 border border-cream-200/50 dark:border-gray-800" />
                     <div className="flex items-center gap-1.5 mb-3">
                       <span className="text-lg">{CATEGORY_EMOJI[p.category] ?? '📦'}</span>
                       <span className="text-xs text-gray-400 font-medium">{p.category ?? 'General'}</span>
@@ -252,10 +318,16 @@ export default function Shop() {
                       <span className="text-2xl font-bold text-brand-600">${Number(p.price).toFixed(2)}</span>
                       <span className="text-xs text-gray-400">{p.stock_qty} left</span>
                     </div>
-                    <button disabled={p.stock_qty === 0 || atMax} onClick={() => addToCart(p)}
-                      className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white font-medium text-sm py-2.5 rounded-xl transition-all duration-300 hover:shadow-md hover:shadow-brand-600/20">
-                      {p.stock_qty === 0 ? 'Out of stock' : atMax ? 'Max in cart' : 'Add to cart'}
-                    </button>
+                    <div className="space-y-2">
+                      <button disabled={p.stock_qty === 0} onClick={() => buyNow(p)}
+                        className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white font-medium text-sm py-2.5 rounded-xl transition-all duration-300 hover:shadow-md hover:shadow-brand-600/20">
+                        Buy Now
+                      </button>
+                      <button disabled={p.stock_qty === 0 || atMax} onClick={() => addToCart(p)}
+                        className="w-full bg-cream-100 hover:bg-cream-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 font-medium text-sm py-2 rounded-xl transition-all duration-300 border border-cream-200/50 dark:border-gray-700">
+                        {p.stock_qty === 0 ? 'Out of stock' : atMax ? 'Max in cart' : 'Add to cart'}
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -300,7 +372,12 @@ export default function Shop() {
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {cart.length === 0 ? (
                 <div className="text-center text-gray-400 text-sm py-16">
-                  <p className="text-5xl mb-4">🛒</p>Your cart is empty. Add a product to get started.
+                  <p className="text-5xl mb-4">🛒</p>
+                  <p className="mb-6">Your cart is empty. Add a product to get started.</p>
+                  <button onClick={() => setCartOpen(false)}
+                    className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-brand-600/20">
+                    ← Continue Shopping
+                  </button>
                 </div>
               ) : (
                 <ul className="space-y-3">
@@ -334,8 +411,12 @@ export default function Shop() {
               {customer ? (
                 <button onClick={handlePlaceOrder} disabled={cart.length === 0 || placing} className="w-full btn-primary">{placing ? 'Placing order…' : 'Place Order'}</button>
               ) : (
-                <Link to="/login" className="block text-center w-full btn-primary">Sign in to order</Link>
+                <Link to="/login" state={{ from: '/' }} className="block text-center w-full btn-primary">Sign in to order</Link>
               )}
+              <button onClick={() => setCartOpen(false)}
+                className="w-full text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 py-2 transition-colors">
+                ← Continue Shopping
+              </button>
             </div>
           </aside>
         </div>
@@ -347,9 +428,9 @@ export default function Shop() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center">
-                 <img src="/logo.svg" alt="67 mini" className="w-9 h-9" />
+                 <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-9 h-9" />
               </div>
-              <span className="font-serif font-bold text-xl">67 mini mart</span>
+              <span className="font-serif font-bold text-xl">67 Mini Mart</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-sm mb-4">
               Your neighborhood store for curated, quality products. We're committed to making your shopping experience delightful, every single day.
@@ -365,6 +446,7 @@ export default function Shop() {
               <li><a href="#about" className="hover:text-brand-400 transition-colors">About Us</a></li>
               <li><a href="#features" className="hover:text-brand-400 transition-colors">Features</a></li>
               <li><Link to="/login" className="hover:text-brand-400 transition-colors">Customer Login</Link></li>
+              <li><Link to="/staff/login" className="hover:text-brand-400 transition-colors">Staff Portal</Link></li>
             </ul>
           </div>
           <div>
@@ -378,7 +460,7 @@ export default function Shop() {
           </div>
         </div>
         <div className="border-t border-gray-800 pt-6 text-center">
-          <p className="text-xs text-gray-500">© 2026 67 mini mart — Quality you can trust. Built with ❤️ in Cambodia.</p>
+          <p className="text-xs text-gray-500">© 2026 67 Mini Mart — Quality you can trust. Built with ❤️ in Cambodia.</p>
         </div>
       </footer>
     </div>

@@ -281,7 +281,7 @@ Each role sees a different navbar:
 | Admin   | Dashboard · Users · Products · Orders · Audit Logs · Config |
 | Sales   | Dashboard · Products · Orders · Customers |
 | Cashier | Dashboard · Orders · Customers |
-| Viewer  | Dashboard · Products · Orders (read-only) |
+| User    | Dashboard · Products · Orders (read-only) |
 
 ### 5.4 Defense-in-depth
 
@@ -332,7 +332,7 @@ Each phase is one focused chunk of work, runnable on its own.
 ## 7. Demo Script (~5 min)
 
 1. **Open `http://localhost:5173`** — login screen with 4 quick-login buttons:
-   `Admin · Sales · Cashier · Viewer`.
+   `Admin · Sales · Cashier · User`.
 2. **Click "Admin"** — full navbar appears. Open Users page → show role
    reassignment. Open Audit Logs → show LOGIN event just recorded.
 3. **Logout. Click "Cashier"** — navbar is shorter (no Users, no Audit). Open
@@ -340,7 +340,7 @@ Each phase is one focused chunk of work, runnable on its own.
    nav.
 4. **Manually type `/users` into URL** — frontend doesn't redirect, but the
    table loads empty because the API returns `403`. Show the Network tab.
-5. **Logout. Click "Viewer"** — only Products and Orders visible, both
+5. **Logout. Click "User"** — only Products and Orders visible, both
    read-only (no "Add" button rendered).
 6. **Final slide:** show the permission matrix from `v_role_permissions` —
    that view is the single source of truth driving the entire demo.

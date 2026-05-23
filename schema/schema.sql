@@ -67,8 +67,17 @@ CREATE TABLE products (
     price       NUMERIC(10,2)   NOT NULL CHECK (price >= 0),
     stock_qty   INT             NOT NULL DEFAULT 0 CHECK (stock_qty >= 0),
     supplier_id INT             REFERENCES suppliers(supplier_id) ON DELETE SET NULL,
+    image_url   VARCHAR(500),
     is_active   BOOLEAN         NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE product_images (
+    image_id   SERIAL        PRIMARY KEY,
+    label      VARCHAR(150)  NOT NULL,
+    image_url  VARCHAR(500)  NOT NULL UNIQUE,
+    source     VARCHAR(500),
+    created_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─────────────────────────────────────────────

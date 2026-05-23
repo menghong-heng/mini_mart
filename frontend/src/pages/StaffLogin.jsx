@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 
 const DEMO_ACCOUNTS = [
@@ -36,12 +36,17 @@ export default function StaffLogin() {
       <div className="absolute top-20 left-20 w-96 h-96 bg-brand-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-20 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl" />
 
+      <Link to="/"
+        className="absolute left-4 top-4 sm:left-6 sm:top-6 z-20 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-300 backdrop-blur transition-colors hover:bg-white/10 hover:text-white">
+        Back to Shop
+      </Link>
+
       <div className="relative z-10 w-full max-w-md animate-fade-up">
         <div className="glass-dark rounded-3xl p-8 shadow-2xl">
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center">
-              <img src="/logo.svg" alt="67 mini" className="w-14 h-14" />
+              <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-14 h-14" />
             </div>
             <div>
               <h1 className="text-xl font-serif font-bold text-white leading-tight">Staff Portal</h1>

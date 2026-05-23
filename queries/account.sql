@@ -87,12 +87,12 @@ WHERE  username = 'sales_mgr';
 -- ─────────────────────────────────────────────
 UPDATE users
 SET    is_active = FALSE
-WHERE  username  = 'viewer_01';
+WHERE  username  = 'user_01';
 
 -- Reactivate
 UPDATE users
 SET    is_active = TRUE
-WHERE  username  = 'viewer_01';
+WHERE  username  = 'user_01';
 
 
 -- ─────────────────────────────────────────────
@@ -132,7 +132,7 @@ ORDER BY s.created_at DESC;
 -- ─────────────────────────────────────────────
 UPDATE sessions
 SET    is_active = FALSE
-WHERE  user_id  = (SELECT user_id FROM users WHERE username = 'viewer_01')
+WHERE  user_id  = (SELECT user_id FROM users WHERE username = 'user_01')
   AND  is_active = TRUE;
 
 

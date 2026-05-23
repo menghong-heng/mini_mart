@@ -1,0 +1,55 @@
+67 Mini Mart product image sources
+==================================
+
+Downloaded files live in frontend/public/product-images and are referenced by
+products.image_url plus product_images.image_url in PostgreSQL.
+
+Wireless Mouse
+Local path: /product-images/wireless-mouse.jpg
+Source: https://commons.wikimedia.org/wiki/File:A_wireless_computer_mouse.jpg
+License: CC BY-SA 4.0
+
+Mechanical Keyboard
+Local path: /product-images/mechanical-keyboard.jpg
+Source: https://commons.wikimedia.org/wiki/File:Mechanical_keyboard_example.jpg
+License: CC BY-SA 4.0
+
+USB-C Hub (7-port)
+Local path: /product-images/usb-c-hub.jpg
+Source: https://commons.wikimedia.org/wiki/File:USB-C_Digital_AV_Multiport_Adapter.jpeg
+License: CC BY-SA 4.0
+
+Sparkling Water 6-pk
+Local path: /product-images/sparkling-water.jpg
+Source: https://commons.wikimedia.org/wiki/File:Sparkling-bottled-water.jpg
+License: CC BY-SA 2.0
+
+Orange Juice 1L
+Local path: /product-images/orange-juice.jpg
+Source: https://commons.wikimedia.org/wiki/File:Orange_juice_1_edit1.jpg
+License: Public domain
+
+Energy Drink 4-pk
+Local path: /product-images/energy-drink.jpg
+Source: https://commons.wikimedia.org/wiki/File:Battery_Energy_Drink-can-bottle.jpg
+License: Public domain
+
+A4 Notebook (100pg)
+Local path: /product-images/a4-notebook.jpg
+Source: https://commons.wikimedia.org/wiki/File:Cuaderno_Cervantes_A4.jpg
+License: CC BY-SA 4.0
+
+Ballpoint Pens Box
+Local path: /product-images/ballpoint-pens.jpg
+Source: https://commons.wikimedia.org/wiki/File:Lapicero_Parker_de_color_azul..JPG
+License: CC BY-SA 4.0
+
+Classic T-Shirt
+Local path: /product-images/classic-t-shirt.jpg
+Source: https://commons.wikimedia.org/wiki/File:T-SHIRTS.jpg
+License: CC BY-SA 3.0
+
+Slim-Fit Jeans
+Local path: /product-images/slim-fit-jeans.jpg
+Source: https://commons.wikimedia.org/wiki/File:Skinny_jeans_01.jpg
+License: CC BY-SA 2.0

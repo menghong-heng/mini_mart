@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from '../components/ThemeToggle'
 import { useCustomerAuth } from '../auth/CustomerAuthContext'
 
 export default function Login() {
   const { customer, login } = useCustomerAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from || '/'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (customer) navigate('/orders/mine', { replace: true })
-  }, [customer, navigate])
+    if (customer) navigate(from, { replace: true })
+  }, [customer, navigate, from])
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -21,7 +23,7 @@ export default function Login() {
     setLoading(true)
     try {
       await login(email, password)
-      navigate('/orders/mine')
+      navigate(from)
     } catch (err) {
       setError(err.response?.data?.detail ?? 'Sign-in failed — check your email and password.')
     } finally { setLoading(false) }
@@ -29,7 +31,8 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex font-sans transition-colors relative">
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+        <Link to="/staff/login" className="text-sm font-medium text-gray-500 dark:text-gray-300 hover:text-brand-600 transition-colors">Staff Portal</Link>
         <ThemeToggle />
       </div>
       {/* Left — Brand Panel */}
@@ -40,9 +43,9 @@ export default function Login() {
         </div>
         <div className="relative z-10 text-center text-white max-w-md">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-8">
-            <img src="/logo.svg" alt="67 mini" className="w-20 h-20 drop-shadow-xl" />
+            <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-20 h-20 drop-shadow-xl" />
           </div>
-          <h2 className="font-serif text-4xl font-bold mb-4">Welcome Back to<br />67 mini mart</h2>
+          <h2 className="font-serif text-4xl font-bold mb-4">Welcome Back to<br />67 Mini Mart</h2>
           <p className="text-brand-100 leading-relaxed mb-8">
             Sign in to track your orders, manage your account, and enjoy a seamless shopping experience.
           </p>
@@ -58,9 +61,9 @@ export default function Login() {
       <div className="flex-1 bg-cream-50 dark:bg-gray-900 flex flex-col items-center justify-center px-6 py-12 transition-colors">
         <Link to="/" className="flex items-center gap-2 mb-10 lg:hidden">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center">
-            <img src="/logo.svg" alt="67 mini" className="w-12 h-12" />
+            <img src="/logo.png" alt="67 Mini Mart" className="brand-logo w-12 h-12" />
           </div>
-          <span className="text-xl font-serif font-bold text-gray-900 dark:text-white">67 mini mart</span>
+          <span className="text-xl font-serif font-bold text-gray-900 dark:text-white">67 Mini Mart</span>
         </Link>
 
         <div className="bg-white dark:bg-gray-950 rounded-3xl shadow-sm border border-cream-200 dark:border-gray-800 p-8 w-full max-w-sm animate-fade-up">
@@ -93,7 +96,7 @@ export default function Login() {
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-8">
-            New to 67 mini mart?{' '}
+            New to 67 Mini Mart?{' '}
             <Link to="/signup" className="text-brand-600 hover:underline font-semibold">Create account</Link>
           </p>
         </div>

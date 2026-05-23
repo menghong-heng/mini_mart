@@ -109,11 +109,11 @@ ORDER BY s.created_at DESC;
 -- SELECT fn_check_permission('<cashier_token>', 'stock');   -- FALSE
 -- SELECT fn_check_permission('<cashier_token>', 'view');    -- TRUE
 
--- Viewer token — only 'view' returns TRUE:
--- SELECT fn_check_permission('<viewer_token>', 'admin');    -- FALSE
--- SELECT fn_check_permission('<viewer_token>', 'sales');    -- FALSE
--- SELECT fn_check_permission('<viewer_token>', 'stock');    -- FALSE
--- SELECT fn_check_permission('<viewer_token>', 'view');     -- TRUE
+-- User token — only 'view' returns TRUE:
+-- SELECT fn_check_permission('<user_token>', 'admin');      -- FALSE
+-- SELECT fn_check_permission('<user_token>', 'sales');      -- FALSE
+-- SELECT fn_check_permission('<user_token>', 'stock');      -- FALSE
+-- SELECT fn_check_permission('<user_token>', 'view');       -- TRUE
 
 -- Invalid / expired token — all return FALSE:
 -- SELECT fn_check_permission('not-a-real-token', 'view');  -- FALSE
@@ -133,4 +133,4 @@ ORDER BY s.created_at DESC;
 -- Admin     | TRUE         | TRUE         | TRUE         | TRUE
 -- Sales     | FALSE        | TRUE         | TRUE         | TRUE
 -- Cashier   | FALSE        | TRUE         | FALSE        | TRUE
--- Viewer    | FALSE        | FALSE        | FALSE        | TRUE
+-- User      | FALSE        | FALSE        | FALSE        | TRUE

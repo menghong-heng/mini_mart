@@ -186,6 +186,8 @@ def create_order(
             cust = cur.fetchone()
             customer_name = cust["name"] if cust else None
 
+    db.commit()
+
     return OrderOut(
         order_id=order_id,
         customer=customer_name,
@@ -210,11 +212,12 @@ def update_order_status(
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
 
-        allowed = _VALID_TRANSITIONS.get(order["status"], set())
+        old_status = order["status"]
+        allowed = _VALID_TRANSITIONS.get(old_status, set())
         if body.status not in allowed:
             raise HTTPException(
                 status_code=400,
-                detail=f"Cannot move from '{order['status']}' to '{body.status}'. "
+                detail=f"Cannot move from '{old_status}' to '{body.status}'. "
                        f"Allowed: {sorted(allowed) or 'none'}",
             )
 
@@ -223,6 +226,29 @@ def update_order_status(
             SET    status = %s, updated_at = NOW()
             WHERE  order_id = %s
         """, (body.status, order_id))
+
+        # Restock products on cancellation!
+        if body.status == "cancelled" and old_status != "cancelled":
+            cur.execute(
+                """
+                SELECT product_id, quantity
+                FROM   order_items
+                WHERE  order_id = %s
+                """,
+                (order_id,),
+            )
+            items = cur.fetchall()
+            for item in items:
+                cur.execute(
+                    """
+                    UPDATE products
+                    SET    stock_qty = stock_qty + %s
+                    WHERE  product_id = %s
+                    """,
+                    (item["quantity"], item["product_id"]),
+                )
+
+    db.commit()
 
     return SuccessResponse(success=True)
 
@@ -284,6 +310,8 @@ def create_invoice(
         """, (body.order_id, body.due_days))
         inv = cur.fetchone()
 
+    db.commit()
+
     return InvoiceOut(
         invoice_id=inv["invoice_id"],
         order_id=body.order_id,
@@ -308,8 +336,10 @@ def pay_invoice(
             UPDATE invoices
             SET    paid_at = NOW(), status = 'paid'
             WHERE  invoice_id = %s AND status = 'unpaid'
+            RETURNING order_id
         """, (invoice_id,))
-        if cur.rowcount == 0:
+        row = cur.fetchone()
+        if not row:
             # Either not found or already paid
             cur.execute("SELECT status FROM invoices WHERE invoice_id = %s", (invoice_id,))
             existing = cur.fetchone()
@@ -319,5 +349,14 @@ def pay_invoice(
                 status_code=400,
                 detail=f"Invoice is already '{existing['status']}'",
             )
+
+        # Cohesively update the order status to 'confirmed' if it's currently 'pending'
+        cur.execute("""
+            UPDATE orders
+            SET    status = 'confirmed', updated_at = NOW()
+            WHERE  order_id = %s AND status = 'pending'
+        """, (row["order_id"],))
+
+    db.commit()
 
     return SuccessResponse(success=True)
