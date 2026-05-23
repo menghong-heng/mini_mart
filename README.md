@@ -247,4 +247,4 @@ node scripts/smoke_api.mjs
 ---
 
 ## License
-Private and Confidential. Course Project of the Department of Information Technology Engineering (ITC), Phnom Penh, Cambodia. Built by Menghong Heng.
+Private and Confidential. Course Project of the Department of Applied Mathematics and Statistics at ITC, Phnom Penh, Cambodia. Built by Menghong Heng.
