@@ -2,41 +2,41 @@
 
 **67 Mini Mart** is a production-ready, highly relational, and database-centered full-stack e-commerce storefront and staff management system built for a database design and administration course project. 
 
-The application integrates a customer storefront, a restricted staff operations portal, a FastAPI service layer, and PostgreSQL stored procedures (`PL/pgSQL`) for authentication, transaction management, automated inventory control, and role-based access control (RBAC).
+The application integrates a customer storefront, a restricted staff operations portal, a FastAPI service layer, and PostgreSQL stored procedures (PL/pgSQL) for authentication, transaction management, automated inventory control, and role-based access control (RBAC).
 
 ---
 
-## 🚀 Key High-Fidelity & Modern Features
+## Key High-Fidelity and Modern Features
 
 The application incorporates state-of-the-art e-commerce and database administration patterns:
 
-### 1. 💾 Persistent Multi-User Shopping Carts
+### 1. Persistent Multi-User Shopping Carts
 * Cart states are stored inside local storage partitioned by customer IDs (`sentinel_cart_customer_${customer_id}`).
 * Reloading the browser or logging out preserves your basket data, restoring it instantly upon signing back in.
 
-### 2. 🔀 Automated Guest-to-Customer Cart Merging
+### 2. Automated Guest-to-Customer Cart Merging
 * Guest shoppers can browse the catalog and add products to a guest cart.
-* Upon signing up or logging in, the guest basket is **automatically merged** into their customer account cart in local storage and persisted securely.
+* Upon signing up or logging in, the guest basket is automatically merged into their customer account cart in local storage and persisted securely.
 
-### 3. 💳 Integrated Customer checkout & Payment Flow
+### 3. Integrated Customer Checkout and Payment Flow
 * Provides a secure customer-facing payment API (`POST /api/shop/orders/{order_id}/pay`) that settles order invoices.
-* Renders a real-time, interactive **"Pay Now"** button on the customer order portal next to unpaid items, prompting immediate confirmation and list reloading.
+* Renders a real-time, interactive "Pay Now" button on the customer order portal next to unpaid items, prompting immediate confirmation and list reloading.
 
-### 4. 🤝 Cohesive Cashier-Customer Transaction Sync
-* When cashiers mark an invoice as paid via the staff portal, the backend triggers a synchronized update that advances the corresponding order status from `'pending'` to `'confirmed'` automatically.
+### 4. Cohesive Cashier-Customer Transaction Sync
+* When cashiers mark an invoice as paid via the staff portal, the backend triggers a synchronized update that advances the corresponding order status from 'pending' to 'confirmed' automatically.
 
-### 5. 📦 Dynamic Inventory Control & Restocking
+### 5. Dynamic Inventory Control and Restocking
 * **Stock Deductions:** Placing an order immediately decrements the database product stock, reserving items for the buyer.
 * **Automatic Stock Recovery:** Cancelling an order (via staff portal) immediately returns all items back to the storage/warehouse, updating inventory automatically.
-* **Product Re-activation:** Staff can re-activate discontinued products with a green **"Reactivate"** option which restores visibility in the shop after restocking.
+* **Product Re-activation:** Staff can re-activate discontinued products with a green "Reactivate" option which restores visibility in the shop after restocking.
 
-### 6. 🌓 Premium Responsive Dark Mode
+### 6. Premium Responsive Dark Mode
 * Beautiful, glassmorphic styling utilizing Tailwind CSS.
 * Capitalized usernames with perfect contrast colors in both light and dark modes to guarantee readability across all headers, cards, and portals.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technology | Purpose |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ The application incorporates state-of-the-art e-commerce and database administra
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 .
@@ -83,7 +83,7 @@ The application incorporates state-of-the-art e-commerce and database administra
 
 ---
 
-## 🏗️ Architecture & Network Setup
+## Architecture and Network Setup
 
 The system deploys 3 isolated Docker services in a shared network bridge:
 
@@ -103,7 +103,7 @@ graph TD
 
 ---
 
-## 🗄️ Database Initialization Flow
+## Database Initialization Flow
 
 When the `db` service container boots for the first time, it executes files inside `/docker-entrypoint-initdb.d/` in alphanumeric order:
 
@@ -129,10 +129,10 @@ When the `db` service container boots for the first time, it executes files insi
 
 ---
 
-## 🚀 Running the Application Locally
+## Running the Application Locally
 
 ### Prerequisites
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/) with Docker Compose installed.
+* Docker Desktop with Docker Compose installed.
 
 ### Start the Application
 Run this command in the project root to build and run all services in the background:
@@ -152,7 +152,7 @@ Once the services start, you can access the system at the following endpoints:
 | **Interactive API Docs** | [http://localhost:8001/docs](http://localhost:8001/docs) |
 | **Backend Health Check** | [http://localhost:8001/health](http://localhost:8001/health) |
 
-### Check Logs & Status
+### Check Logs and Status
 ```bash
 # View running status
 docker compose ps
@@ -173,19 +173,19 @@ docker compose up --build -d
 
 ---
 
-## 👥 Demo User Accounts
+## Demo User Accounts
 
 The database seeds predictable accounts to make local demonstrations and testing extremely convenient:
 
-### 🛍️ Customers
+### Customers
 Seeded customer profiles (e.g. `Sophea Chan`, `Dara Nguyen`) are seeded as database customer records to display invoices/orders. 
 To log in as a customer:
 1. Navigate to `/signup` and create a fresh test account.
 2. Sign in from `/login` using your registered credentials.
-3. You will immediately be able to add items to your cart, place orders, click **"Pay Now"**, and review order statuses.
+3. You will immediately be able to add items to your cart, place orders, click "Pay Now", and review order statuses.
 
-### 🔐 Staff Portal Accounts
-The staff portal has **one-click login buttons** for these seeded roles:
+### Staff Portal Accounts
+The staff portal has one-click login buttons for these seeded roles:
 
 | Role | Username | Password | Access Level |
 | --- | --- | --- | --- |
@@ -198,7 +198,7 @@ The staff portal has **one-click login buttons** for these seeded roles:
 
 ---
 
-## 🔒 Role-Based Access Control Map
+## Role-Based Access Control Map
 
 | Stored Procedure Check | Admin Role | Sales Role | Cashier Role | User Role |
 | --- | --- | --- | --- | --- |
@@ -209,7 +209,7 @@ The staff portal has **one-click login buttons** for these seeded roles:
 
 ---
 
-## 🛠️ CLI Staff Account Manager
+## CLI Staff Account Manager
 
 Manage staff status and credentials directly from the host terminal:
 
@@ -229,7 +229,7 @@ docker compose exec backend python manage_staff.py --activate user_01
 
 ---
 
-## 🛡️ Verification & Test Suite
+## Verification and Test Suite
 
 Validate that all backend controllers and database procedures operate perfectly:
 
@@ -246,5 +246,5 @@ node scripts/smoke_api.mjs
 
 ---
 
-## 📝 License
+## License
 Private and Confidential. Course Project of the Department of Information Technology Engineering (ITC), Phnom Penh, Cambodia. Built by Menghong Heng.
