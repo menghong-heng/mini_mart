@@ -77,7 +77,7 @@ def dashboard_activity(
     union_sql = " UNION ALL ".join(sub_queries)
     query = f"""
         SELECT type, record_id, label, created_at
-        FROM ({union_sql}) AS feed
+        FROM ({union_sql}) feed
         ORDER BY created_at DESC
         LIMIT 20
     """

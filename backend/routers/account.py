@@ -8,9 +8,8 @@ listing active sessions is sensitive information.
 import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg import errors
 
-from db import get_db
+from db import DatabaseIntegrityError, get_db, is_unique_violation
 from deps import get_current_user, require
 from schemas import (
     ActiveToggle,
@@ -69,11 +68,13 @@ def create_user(
         try:
             cur.execute("""
                 INSERT INTO users (username, password_hash, role_id, is_active)
-                VALUES (%s, %s, %s, TRUE)
+                VALUES (%s, %s, %s, 1)
                 RETURNING user_id, username, is_active, created_at, last_login
             """, (body.username, _md5(body.password), role["role_id"]))
-        except errors.UniqueViolation:
-            raise HTTPException(status_code=409, detail=f"Username '{body.username}' already exists")
+        except DatabaseIntegrityError as e:
+            if is_unique_violation(e):
+                raise HTTPException(status_code=409, detail=f"Username '{body.username}' already exists") from e
+            raise
 
         row = cur.fetchone()
 
@@ -127,7 +128,7 @@ def toggle_active(
         if not body.is_active:
             # Force-expire all active sessions for this user (A9)
             cur.execute(
-                "UPDATE sessions SET is_active = FALSE WHERE user_id = %s AND is_active = TRUE",
+                "UPDATE sessions SET is_active = 0 WHERE user_id = %s AND is_active = 1",
                 (user_id,),
             )
 
@@ -170,8 +171,8 @@ def list_sessions(
             FROM   sessions s
             JOIN   users u ON u.user_id = s.user_id
             JOIN   roles r ON r.role_id = u.role_id
-            WHERE  s.is_active  = TRUE
-              AND  s.expires_at > NOW()
+            WHERE  s.is_active  = 1
+              AND  s.expires_at > CURRENT_TIMESTAMP
             ORDER BY s.created_at DESC
         """)
         return cur.fetchall()

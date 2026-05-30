@@ -45,21 +45,22 @@ ORDER BY oi.item_id;
 --      Cashier:  cashier_01 (user_id=3)
 --      Items:    2× Mechanical Keyboard, 3× A4 Notebook
 -- ─────────────────────────────────────────────
-BEGIN;
+-- SQL*Plus users can define this variable before running the transaction:
+-- VARIABLE new_order_id NUMBER
 
 INSERT INTO orders (customer_id, user_id, total_amount, status)
 VALUES (4, 3, 0, 'pending')
-RETURNING order_id;
--- copy the returned order_id into the inserts below
+RETURNING order_id INTO :new_order_id;
 
 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-VALUES
-    (4, 2, 2, (SELECT price FROM products WHERE product_id = 2)),   -- 2× Mechanical Keyboard
-    (4, 7, 3, (SELECT price FROM products WHERE product_id = 7));   -- 3× A4 Notebook
+VALUES (:new_order_id, 2, 2, (SELECT price FROM products WHERE product_id = 2));
+
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+VALUES (:new_order_id, 7, 3, (SELECT price FROM products WHERE product_id = 7));
 
 UPDATE orders
-SET total_amount = (SELECT SUM(subtotal) FROM order_items WHERE order_id = 4)
-WHERE order_id = 4;
+SET total_amount = (SELECT SUM(subtotal) FROM order_items WHERE order_id = :new_order_id)
+WHERE order_id = :new_order_id;
 
 -- Reduce stock to reflect items sold
 UPDATE products SET stock_qty = stock_qty - 2 WHERE product_id = 2;
@@ -73,7 +74,7 @@ COMMIT;
 -- ─────────────────────────────────────────────
 UPDATE orders
 SET    status     = 'confirmed',
-       updated_at = NOW()
+       updated_at = CURRENT_TIMESTAMP
 WHERE  order_id = 4
   AND  status   = 'pending';
 
@@ -83,7 +84,7 @@ WHERE  order_id = 4
 -- ─────────────────────────────────────────────
 UPDATE orders
 SET    status     = 'cancelled',
-       updated_at = NOW()
+       updated_at = CURRENT_TIMESTAMP
 WHERE  order_id = 4
   AND  status  IN ('pending', 'confirmed');
 
@@ -94,7 +95,7 @@ WHERE  order_id = 4
 INSERT INTO invoices (order_id, due_date, status)
 VALUES (
     3,                              -- order_id without an invoice yet
-    CURRENT_DATE + INTERVAL '14 days',
+    CURRENT_DATE + 14,
     'unpaid'
 );
 
@@ -103,7 +104,7 @@ VALUES (
 -- SL7. Mark an invoice as paid
 -- ─────────────────────────────────────────────
 UPDATE invoices
-SET    paid_at = NOW(),
+SET    paid_at = CURRENT_TIMESTAMP,
        status  = 'paid'
 WHERE  order_id   = 3
   AND  status     = 'unpaid';

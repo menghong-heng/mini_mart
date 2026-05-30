@@ -10,18 +10,17 @@ Edit the STAFF list below, then run:
     python manage_staff.py --deactivate <username>       # disable account
     python manage_staff.py --activate   <username>       # re-enable account
 
-Reads DATABASE_URL from .env (same file used by the FastAPI app).
+Reads Oracle connection settings from .env (same file used by the FastAPI app).
 Passwords are stored as md5(plaintext) to match fn_login expectations.
 """
 
 import argparse
 import getpass
 import hashlib
-import os
 import sys
-import psycopg
-from psycopg.rows import dict_row   
 from dotenv import load_dotenv
+
+from db import connect
 
 load_dotenv()
 
@@ -64,11 +63,7 @@ def _md5(text: str) -> str:
 
 
 def _get_conn():
-    db_url = os.getenv(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/sentineldb",
-    )
-    return psycopg.connect(db_url, row_factory=dict_row)
+    return connect()
 
 
 def sync_staff(conn) -> None:
@@ -85,23 +80,27 @@ def sync_staff(conn) -> None:
 
             pw_hash = _md5(s["password"])
             role_id = role_row["role_id"]
-            cur.execute(
-                """INSERT INTO users (username, password_hash, role_id, is_active)
-                   VALUES (%s, %s, %s, %s)
-                   ON CONFLICT (username) DO UPDATE
-                       SET password_hash = EXCLUDED.password_hash,
-                           role_id       = EXCLUDED.role_id,
-                           is_active     = EXCLUDED.is_active
-                   RETURNING (xmax = 0) AS inserted""",
-                (s["username"], pw_hash, role_id, s["active"]),
-            )
-            row = cur.fetchone()
-            if row["inserted"]:
-                added += 1
-                print(f"  ADD    {s['username']!r}  ->  role={s['role']}")
-            else:
+            cur.execute("SELECT user_id FROM users WHERE username = %s", (s["username"],))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    """UPDATE users
+                       SET password_hash = %s,
+                           role_id       = %s,
+                           is_active     = %s
+                       WHERE user_id = %s""",
+                    (pw_hash, role_id, s["active"], existing["user_id"]),
+                )
                 updated += 1
                 print(f"  UPDATE {s['username']!r}  ->  role={s['role']}, active={s['active']}")
+            else:
+                cur.execute(
+                    """INSERT INTO users (username, password_hash, role_id, is_active)
+                       VALUES (%s, %s, %s, %s)""",
+                    (s["username"], pw_hash, role_id, s["active"]),
+                )
+                added += 1
+                print(f"  ADD    {s['username']!r}  ->  role={s['role']}")
 
     conn.commit()
     print(f"\nDone — Added: {added}, Updated: {updated}, Skipped: {skipped}")

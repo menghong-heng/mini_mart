@@ -127,7 +127,7 @@ def create_order(
             cur.execute("""
                 SELECT product_id, price, stock_qty, name
                 FROM   products
-                WHERE  product_id = %s AND is_active = TRUE
+                WHERE  product_id = %s AND is_active = 1
             """, (item.product_id,))
             prod = cur.fetchone()
             if not prod:
@@ -223,7 +223,7 @@ def update_order_status(
 
         cur.execute("""
             UPDATE orders
-            SET    status = %s, updated_at = NOW()
+            SET    status = %s, updated_at = CURRENT_TIMESTAMP
             WHERE  order_id = %s
         """, (body.status, order_id))
 
@@ -305,7 +305,7 @@ def create_invoice(
 
         cur.execute("""
             INSERT INTO invoices (order_id, due_date, status)
-            VALUES (%s, CURRENT_DATE + %s, 'unpaid')
+            VALUES (%s, TRUNC(CURRENT_DATE) + %s, 'unpaid')
             RETURNING invoice_id, issued_at, due_date, paid_at, status
         """, (body.order_id, body.due_days))
         inv = cur.fetchone()
@@ -334,7 +334,7 @@ def pay_invoice(
     with db.cursor() as cur:
         cur.execute("""
             UPDATE invoices
-            SET    paid_at = NOW(), status = 'paid'
+            SET    paid_at = CURRENT_TIMESTAMP, status = 'paid'
             WHERE  invoice_id = %s AND status = 'unpaid'
             RETURNING order_id
         """, (invoice_id,))
@@ -353,7 +353,7 @@ def pay_invoice(
         # Cohesively update the order status to 'confirmed' if it's currently 'pending'
         cur.execute("""
             UPDATE orders
-            SET    status = 'confirmed', updated_at = NOW()
+            SET    status = 'confirmed', updated_at = CURRENT_TIMESTAMP
             WHERE  order_id = %s AND status = 'pending'
         """, (row["order_id"],))
 

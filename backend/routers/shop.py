@@ -34,7 +34,7 @@ def shop_products(db=Depends(get_db)):
                    p.image_url
             FROM   products p
             LEFT   JOIN categories c ON c.category_id = p.category_id
-            WHERE  p.is_active  = TRUE
+            WHERE  p.is_active  = 1
               AND  p.stock_qty  > 0
             ORDER  BY c.name NULLS LAST, p.name
             """
@@ -63,7 +63,7 @@ def create_my_order(
                 """
                 SELECT product_id, stock_qty, name
                 FROM   products
-                WHERE  product_id = %s AND is_active = TRUE
+                WHERE  product_id = %s AND is_active = 1
                 """,
                 (item.product_id,),
             )
@@ -128,7 +128,7 @@ def create_my_order(
         cur.execute(
             """
             INSERT INTO invoices (order_id, due_date, status)
-            VALUES (%s, CURRENT_DATE + 14, 'unpaid')
+            VALUES (%s, TRUNC(CURRENT_DATE) + 14, 'unpaid')
             """,
             (order_id,),
         )
@@ -173,7 +173,7 @@ def pay_my_order(
         cur.execute(
             """
             UPDATE invoices
-            SET    paid_at = NOW(), status = 'paid'
+            SET    paid_at = CURRENT_TIMESTAMP, status = 'paid'
             WHERE  order_id = %s AND status = 'unpaid'
             """,
             (order_id,),
@@ -182,7 +182,7 @@ def pay_my_order(
         cur.execute(
             """
             UPDATE orders
-            SET    status = 'confirmed', updated_at = NOW()
+            SET    status = 'confirmed', updated_at = CURRENT_TIMESTAMP
             WHERE  order_id = %s AND status = 'pending'
             """,
             (order_id,),

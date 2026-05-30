@@ -82,7 +82,7 @@ def update_config(
         cur.execute("""
             UPDATE system_config
             SET    config_value = %s,
-                   updated_at   = NOW(),
+                   updated_at   = CURRENT_TIMESTAMP,
                    updated_by   = %s
             WHERE  config_key = %s
             RETURNING config_key, config_value, description, updated_at
@@ -113,26 +113,26 @@ def summary_report(_: dict = Depends(require("admin")), db=Depends(get_db)):
     """AD12 — 10-metric system snapshot."""
     with db.cursor() as cur:
         cur.execute("""
-            SELECT 'Total Users'      AS metric, COUNT(*)::TEXT AS value FROM users
+            SELECT 'Total Users'      AS metric, TO_CHAR(COUNT(*)) AS value FROM users
             UNION ALL
-            SELECT 'Active Users',    COUNT(*)::TEXT FROM users   WHERE is_active = TRUE
+            SELECT 'Active Users',    TO_CHAR(COUNT(*)) FROM users   WHERE is_active = 1
             UNION ALL
-            SELECT 'Total Products',  COUNT(*)::TEXT FROM products
+            SELECT 'Total Products',  TO_CHAR(COUNT(*)) FROM products
             UNION ALL
-            SELECT 'Active Products', COUNT(*)::TEXT FROM products WHERE is_active = TRUE
+            SELECT 'Active Products', TO_CHAR(COUNT(*)) FROM products WHERE is_active = 1
             UNION ALL
-            SELECT 'Total Customers', COUNT(*)::TEXT FROM customers
+            SELECT 'Total Customers', TO_CHAR(COUNT(*)) FROM customers
             UNION ALL
-            SELECT 'Total Orders',    COUNT(*)::TEXT FROM orders
+            SELECT 'Total Orders',    TO_CHAR(COUNT(*)) FROM orders
             UNION ALL
-            SELECT 'Completed Orders',COUNT(*)::TEXT FROM orders   WHERE status = 'completed'
+            SELECT 'Completed Orders',TO_CHAR(COUNT(*)) FROM orders   WHERE status = 'completed'
             UNION ALL
-            SELECT 'Unpaid Invoices', COUNT(*)::TEXT FROM invoices WHERE status = 'unpaid'
+            SELECT 'Unpaid Invoices', TO_CHAR(COUNT(*)) FROM invoices WHERE status = 'unpaid'
             UNION ALL
-            SELECT 'Active Sessions', COUNT(*)::TEXT FROM sessions
-                WHERE is_active = TRUE AND expires_at > NOW()
+            SELECT 'Active Sessions', TO_CHAR(COUNT(*)) FROM sessions
+                WHERE is_active = 1 AND expires_at > CURRENT_TIMESTAMP
             UNION ALL
-            SELECT 'Audit Log Entries', COUNT(*)::TEXT FROM audit_logs
+            SELECT 'Audit Log Entries', TO_CHAR(COUNT(*)) FROM audit_logs
         """)
         return cur.fetchall()
 
@@ -143,13 +143,13 @@ def revenue_report(_: dict = Depends(require("admin")), db=Depends(get_db)):
     with db.cursor() as cur:
         cur.execute("""
             SELECT
-                DATE(o.created_at)                                            AS sale_date,
+                TRUNC(o.created_at)                                           AS sale_date,
                 COUNT(o.order_id)                                             AS orders_placed,
-                COALESCE(SUM(o.total_amount), 0)                             AS gross_revenue,
-                COALESCE(SUM(o.total_amount) FILTER (WHERE o.status = 'completed'), 0)
-                                                                              AS confirmed_revenue
+                COALESCE(SUM(o.total_amount), 0)                              AS gross_revenue,
+                COALESCE(SUM(CASE WHEN o.status = 'completed'
+                                  THEN o.total_amount ELSE 0 END), 0)          AS confirmed_revenue
             FROM  orders o
-            GROUP BY DATE(o.created_at)
+            GROUP BY TRUNC(o.created_at)
             ORDER BY sale_date DESC
         """)
         return cur.fetchall()

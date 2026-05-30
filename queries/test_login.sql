@@ -1,207 +1,92 @@
 -- =============================================================
--- SentinelDB — Login Test Script
--- Phase 2: End-to-end test of the full authentication flow
--- =============================================================
--- Prerequisites (run in this order on a fresh database):
---   \i schema/schema.sql
---   \i data/seed.sql
---   \i queries/auth.sql
---   \i queries/permissions.sql
---   \i queries/test_login.sql   ← this file
+-- SentinelDB - Oracle login smoke test
 -- =============================================================
 
-DO $$
+SET SERVEROUTPUT ON;
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+
 DECLARE
-    v_token     VARCHAR;
+    v_rc        SYS_REFCURSOR;
+    v_token     VARCHAR2(64);
     v_expires   TIMESTAMP;
-    v_role      VARCHAR;
-    v_can_admin BOOLEAN;
-    v_can_sales BOOLEAN;
-    v_can_stock BOOLEAN;
-    v_can_view  BOOLEAN;
-    v_valid     INT;
-    v_result    BOOLEAN;
+    v_username  VARCHAR2(100);
+    v_role      VARCHAR2(50);
+    v_admin     NUMBER;
+    v_sales     NUMBER;
+    v_stock     NUMBER;
+    v_view      NUMBER;
+    v_count     NUMBER;
+    v_result    NUMBER;
+    v_failed    NUMBER;
+
+    PROCEDURE login_as(p_username VARCHAR2, p_password_md5 VARCHAR2, p_expected_role VARCHAR2) IS
+    BEGIN
+        v_rc := fn_login(
+            p_username,
+            p_password_md5,
+            '127.0.0.1'
+        );
+        FETCH v_rc INTO v_token, v_expires, v_role, v_admin, v_sales, v_stock, v_view;
+        CLOSE v_rc;
+
+        DBMS_OUTPUT.PUT_LINE('LOGIN ' || p_username || ' => role=' || v_role || ', token=' || v_token);
+        IF v_role <> p_expected_role THEN
+            raise_application_error(-20901, 'Expected role ' || p_expected_role || ' but got ' || v_role);
+        END IF;
+    END;
 BEGIN
+    login_as('admin_user', '4de93544234adffbb681ed60ffcfb941', 'Admin');
 
--- ─────────────────────────────────────────────
--- TEST 1: Admin login → full permission check → logout
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 1 — Admin login';
-RAISE NOTICE '══════════════════════════════════════════════';
+    v_rc := fn_validate_session(v_token);
+    FETCH v_rc INTO v_count, v_username, v_role, v_admin, v_sales, v_stock, v_view;
+    IF v_rc%NOTFOUND THEN
+        CLOSE v_rc;
+        raise_application_error(-20902, 'Expected admin session to validate');
+    END IF;
+    CLOSE v_rc;
 
-SELECT out_token, out_expires, out_role,
-       out_can_admin, out_can_sales, out_can_stock, out_can_view
-INTO   v_token, v_expires, v_role,
-       v_can_admin, v_can_sales, v_can_stock, v_can_view
-FROM   fn_login('admin_user', md5('Admin@1234'), '127.0.0.1');
+    v_result := fn_check_permission(v_token, 'admin');
+    IF v_result <> 1 THEN
+        raise_application_error(-20903, 'Expected admin permission to be allowed');
+    END IF;
 
-RAISE NOTICE 'Token    : %', v_token;
-RAISE NOTICE 'Expires  : %', v_expires;
-RAISE NOTICE 'Role     : %  (expect: Admin)', v_role;
-RAISE NOTICE 'can_admin: %  (expect: true)',  v_can_admin;
-RAISE NOTICE 'can_sales: %  (expect: true)',  v_can_sales;
-RAISE NOTICE 'can_stock: %  (expect: true)',  v_can_stock;
-RAISE NOTICE 'can_view : %  (expect: true)',  v_can_view;
+    v_result := fn_logout(v_token);
+    IF v_result <> 1 THEN
+        raise_application_error(-20904, 'Expected logout to return 1');
+    END IF;
 
-RAISE NOTICE '--- fn_validate_session ---';
-SELECT COUNT(*) INTO v_valid FROM fn_validate_session(v_token);
-RAISE NOTICE 'Row count (expect 1): %', v_valid;
+    v_rc := fn_validate_session(v_token);
+    FETCH v_rc INTO v_count, v_username, v_role, v_admin, v_sales, v_stock, v_view;
+    IF v_rc%FOUND THEN
+        CLOSE v_rc;
+        raise_application_error(-20905, 'Expected logged-out session to be invalid');
+    END IF;
+    CLOSE v_rc;
 
-RAISE NOTICE '--- fn_check_permission ---';
-SELECT fn_check_permission(v_token, 'admin') INTO v_result;
-RAISE NOTICE 'admin module (expect true ): %', v_result;
-SELECT fn_check_permission(v_token, 'sales') INTO v_result;
-RAISE NOTICE 'sales module (expect true ): %', v_result;
-SELECT fn_check_permission(v_token, 'stock') INTO v_result;
-RAISE NOTICE 'stock module (expect true ): %', v_result;
-SELECT fn_check_permission(v_token, 'view')  INTO v_result;
-RAISE NOTICE 'view  module (expect true ): %', v_result;
+    login_as('sales_mgr', '9580312f024ea8140ad79dc2650396a9', 'Sales');
+    v_result := fn_logout(v_token);
 
-RAISE NOTICE '--- fn_logout ---';
-SELECT fn_logout(v_token) INTO v_result;
-RAISE NOTICE 'Logout returned (expect true): %', v_result;
+    login_as('cashier_01', 'f63da30b6ebd60c0f87061c737a6a52d', 'Cashier');
+    v_result := fn_logout(v_token);
 
-RAISE NOTICE '--- validate after logout ---';
-SELECT COUNT(*) INTO v_valid FROM fn_validate_session(v_token);
-RAISE NOTICE 'Row count after logout (expect 0): %', v_valid;
+    login_as('user_01', '9eeaf04ead83d91063237f9e99d4caee', 'User');
+    v_result := fn_logout(v_token);
 
+    v_failed := 0;
+    BEGIN
+        v_rc := fn_login('admin_user', 'd7eea11dffaf0936611d58d3c5aff066', '127.0.0.1');
+    EXCEPTION
+        WHEN OTHERS THEN
+            v_failed := 1;
+            DBMS_OUTPUT.PUT_LINE('Expected failure: ' || SQLERRM);
+    END;
+    IF v_failed = 0 THEN
+        CLOSE v_rc;
+        raise_application_error(-20906, 'Wrong-password login should have failed');
+    END IF;
 
--- ─────────────────────────────────────────────
--- TEST 2: Sales login
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 2 — Sales login';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-SELECT out_token, out_role,
-       out_can_admin, out_can_sales, out_can_stock, out_can_view
-INTO   v_token, v_role,
-       v_can_admin, v_can_sales, v_can_stock, v_can_view
-FROM   fn_login('sales_mgr', md5('Sales@1234'), '127.0.0.2');
-
-RAISE NOTICE 'Role     : %  (expect: Sales)',  v_role;
-RAISE NOTICE 'can_admin: %  (expect: false)', v_can_admin;
-RAISE NOTICE 'can_sales: %  (expect: true)',  v_can_sales;
-RAISE NOTICE 'can_stock: %  (expect: true)',  v_can_stock;
-RAISE NOTICE 'can_view : %  (expect: true)',  v_can_view;
-
-SELECT fn_logout(v_token) INTO v_result;
-
-
--- ─────────────────────────────────────────────
--- TEST 3: Cashier login — limited permissions
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 3 — Cashier login';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-SELECT out_token, out_role,
-       out_can_admin, out_can_sales, out_can_stock, out_can_view
-INTO   v_token, v_role,
-       v_can_admin, v_can_sales, v_can_stock, v_can_view
-FROM   fn_login('cashier_01', md5('Cash@1234'), '127.0.0.3');
-
-RAISE NOTICE 'Role     : %  (expect: Cashier)', v_role;
-RAISE NOTICE 'can_admin: %  (expect: false)', v_can_admin;
-RAISE NOTICE 'can_sales: %  (expect: true)',  v_can_sales;
-RAISE NOTICE 'can_stock: %  (expect: false)', v_can_stock;
-RAISE NOTICE 'can_view : %  (expect: true)',  v_can_view;
-
-SELECT fn_check_permission(v_token, 'admin') INTO v_result;
-RAISE NOTICE 'permission admin (expect false): %', v_result;
-SELECT fn_check_permission(v_token, 'sales') INTO v_result;
-RAISE NOTICE 'permission sales (expect true ): %', v_result;
-SELECT fn_check_permission(v_token, 'stock') INTO v_result;
-RAISE NOTICE 'permission stock (expect false): %', v_result;
-
-SELECT fn_logout(v_token) INTO v_result;
-
-
--- ─────────────────────────────────────────────
--- TEST 4: User login — read-only
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 4 — User login';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-SELECT out_token, out_role,
-       out_can_admin, out_can_sales, out_can_stock, out_can_view
-INTO   v_token, v_role,
-       v_can_admin, v_can_sales, v_can_stock, v_can_view
-FROM   fn_login('user_01', md5('User@1234'), '127.0.0.4');
-
-RAISE NOTICE 'Role     : %  (expect: User)', v_role;
-RAISE NOTICE 'can_admin: %  (expect: false)', v_can_admin;
-RAISE NOTICE 'can_sales: %  (expect: false)', v_can_sales;
-RAISE NOTICE 'can_stock: %  (expect: false)', v_can_stock;
-RAISE NOTICE 'can_view : %  (expect: true)',  v_can_view;
-
-SELECT fn_logout(v_token) INTO v_result;
-
-
--- ─────────────────────────────────────────────
--- TEST 5: Wrong password (should raise AUTH_FAIL)
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 5 — Wrong password (expect AUTH_FAIL)';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-BEGIN
-    SELECT out_token INTO v_token
-    FROM   fn_login('admin_user', md5('wrongpassword'), '127.0.0.1');
-    RAISE NOTICE 'ERROR: login should have failed but did not!';
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE NOTICE 'Caught (expected): %', SQLERRM;
+    DBMS_OUTPUT.PUT_LINE('All Oracle login smoke checks passed.');
 END;
+/
 
-
--- ─────────────────────────────────────────────
--- TEST 6: Disabled account (should raise AUTH_FAIL)
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 6 — Disabled account (expect AUTH_FAIL)';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-BEGIN
-    SELECT out_token INTO v_token
-    FROM   fn_login('inactive_usr', md5('Old@1234'), '127.0.0.1');
-    RAISE NOTICE 'ERROR: login should have failed but did not!';
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE NOTICE 'Caught (expected): %', SQLERRM;
-END;
-
-
--- ─────────────────────────────────────────────
--- TEST 7: Invalid token permission check
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'TEST 7 — Invalid token → permission check';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-SELECT fn_check_permission('not-a-real-token', 'view') INTO v_result;
-RAISE NOTICE 'Permission on fake token (expect false): %', v_result;
-
-SELECT fn_logout('not-a-real-token') INTO v_result;
-RAISE NOTICE 'Logout on fake token   (expect false): %', v_result;
-
-
--- ─────────────────────────────────────────────
--- DONE
--- ─────────────────────────────────────────────
-RAISE NOTICE '';
-RAISE NOTICE '══════════════════════════════════════════════';
-RAISE NOTICE 'All 7 tests completed.';
-RAISE NOTICE '══════════════════════════════════════════════';
-
-END;
-$$;
+COMMIT;

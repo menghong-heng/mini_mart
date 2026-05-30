@@ -2,7 +2,7 @@
 ==================================
 
 Downloaded files live in frontend/public/product-images and are referenced by
-products.image_url plus product_images.image_url in PostgreSQL.
+products.image_url plus product_images.image_url in Oracle.
 
 Wireless Mouse
 Local path: /product-images/wireless-mouse.jpg

@@ -46,7 +46,7 @@ SELECT
     u.last_login
 FROM  users u
 JOIN  roles r ON r.role_id = u.role_id
-WHERE u.is_active = TRUE
+WHERE u.is_active = 1
 ORDER BY r.role_id, u.username;
 
 
@@ -56,7 +56,7 @@ ORDER BY r.role_id, u.username;
 SELECT
     r.role_name,
     COUNT(u.user_id)                          AS total_users,
-    COUNT(u.user_id) FILTER (WHERE u.is_active) AS active_users
+    SUM(CASE WHEN u.is_active = 1 THEN 1 ELSE 0 END) AS active_users
 FROM  roles r
 LEFT JOIN users u ON u.role_id = r.role_id
 GROUP BY r.role_id, r.role_name
@@ -86,12 +86,12 @@ WHERE  username = 'sales_mgr';
 -- A6. Deactivate a user account
 -- ─────────────────────────────────────────────
 UPDATE users
-SET    is_active = FALSE
+SET    is_active = 0
 WHERE  username  = 'user_01';
 
 -- Reactivate
 UPDATE users
-SET    is_active = TRUE
+SET    is_active = 1
 WHERE  username  = 'user_01';
 
 
@@ -101,9 +101,9 @@ WHERE  username  = 'user_01';
 INSERT INTO users (username, password_hash, role_id, is_active)
 VALUES (
     'new_cashier',
-    md5('NewCash@1234'),
+    LOWER(RAWTOHEX(STANDARD_HASH('NewCash@1234', 'MD5'))),
     (SELECT role_id FROM roles WHERE role_name = 'Cashier'),
-    TRUE
+    1
 );
 
 
@@ -117,12 +117,12 @@ SELECT
     s.ip_address,
     s.created_at  AS login_time,
     s.expires_at,
-    (s.expires_at - NOW()) AS time_left
+    ROUND((CAST(s.expires_at AS DATE) - SYSDATE) * 24 * 60, 2) AS minutes_left
 FROM  sessions s
 JOIN  users u ON u.user_id = s.user_id
 JOIN  roles r ON r.role_id = u.role_id
-WHERE s.is_active  = TRUE
-  AND s.expires_at > NOW()
+WHERE s.is_active  = 1
+  AND s.expires_at > CAST(SYSTIMESTAMP AS TIMESTAMP)
 ORDER BY s.created_at DESC;
 
 
@@ -131,9 +131,9 @@ ORDER BY s.created_at DESC;
 --     (use when disabling an account mid-session)
 -- ─────────────────────────────────────────────
 UPDATE sessions
-SET    is_active = FALSE
+SET    is_active = 0
 WHERE  user_id  = (SELECT user_id FROM users WHERE username = 'user_01')
-  AND  is_active = TRUE;
+  AND  is_active = 1;
 
 
 -- ─────────────────────────────────────────────

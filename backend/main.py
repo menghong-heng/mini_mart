@@ -6,13 +6,13 @@ To run (from inside the backend/ directory):
     source .venv/bin/activate
     pip install -r requirements.txt
     cp .env.example .env
-    # edit .env if your local PostgreSQL credentials differ
+    # edit .env if your local Oracle credentials differ
     uvicorn main:app --reload --port 8000
 
 Then open http://localhost:8000/docs for the Swagger UI.
 
 Prerequisites:
-    The PostgreSQL database referenced by DATABASE_URL must already have:
+    The Oracle database referenced by ORACLE_* env vars must already have:
       - schema/schema.sql loaded
       - data/seed.sql loaded
       - queries/auth.sql loaded
@@ -47,7 +47,7 @@ PRODUCT_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 app = FastAPI(
     title="SentinelDB API",
     version="0.1.0",
-    description="DB-centric RBAC server — every permission check delegates to PL/pgSQL.",
+    description="DB-centric RBAC server - every permission check delegates to Oracle PL/SQL.",
 )
 
 app.add_middleware(

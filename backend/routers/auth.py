@@ -1,6 +1,6 @@
 """Authentication endpoints: login, logout, current-user lookup.
 
-All three delegate to the existing PL/pgSQL functions:
+All three delegate to the existing Oracle PL/SQL functions:
     fn_login           — credential check + opens a session row
     fn_validate_session — checks the token is still valid
     fn_logout          — flips the session row to is_active = FALSE
@@ -9,15 +9,14 @@ Password handling:
     The seed data stores passwords as md5(plaintext). The login endpoint
     hashes the incoming plaintext with md5 before calling fn_login so the
     comparison matches what's stored. This is FOR DEMO ONLY — production
-    should use bcrypt via pgcrypto.crypt().
+    should use bcrypt.
 """
 
 import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from psycopg import errors
 
-from db import get_db
+from db import DatabaseError, db_error_message, get_db
 from deps import get_current_user
 from schemas import LoginRequest, LoginResponse, Permissions, SuccessResponse, UserInfo
 
@@ -40,9 +39,9 @@ def login(req: LoginRequest, request: Request, db=Depends(get_db)):
                 (req.username, password_md5, client_ip),
             )
             row = cur.fetchone()
-    except errors.RaiseException as e:
+    except DatabaseError as e:
         # fn_login raises 'AUTH_FAIL: ...' for bad credentials or disabled account
-        message = e.diag.message_primary or "Authentication failed"
+        message = db_error_message(e) or "Authentication failed"
         raise HTTPException(status_code=401, detail=message) from e
 
     if not row:

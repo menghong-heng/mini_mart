@@ -2,7 +2,7 @@
 
 **67 Mini Mart** is a production-ready, highly relational, and database-centered full-stack e-commerce storefront and staff management system built for a database design and administration course project. 
 
-The application integrates a customer storefront, a restricted staff operations portal, a FastAPI service layer, and PostgreSQL stored procedures (PL/pgSQL) for authentication, transaction management, automated inventory control, and role-based access control (RBAC).
+The application integrates a customer storefront, a restricted staff operations portal, a FastAPI service layer, and Oracle PL/SQL routines for authentication, transaction management, automated inventory control, and role-based access control (RBAC).
 
 ---
 
@@ -41,8 +41,8 @@ The application incorporates state-of-the-art e-commerce and database administra
 | Layer | Technology | Purpose |
 | --- | --- | --- |
 | **Frontend** | React 18, Vite, Tailwind CSS, React Router 6 | Responsive, beautiful customer UI and staff portal |
-| **Backend** | FastAPI, Python 3.12, psycopg 3 (Connection Pooling) | HTTP API server, session checking, file processing |
-| **Database** | PostgreSQL 16 | Relational schemas, stored procedures, logs, triggers |
+| **Backend** | FastAPI, Python 3.12, python-oracledb (Connection Pooling) | HTTP API server, session checking, file processing |
+| **Database** | Oracle Database Free 23ai | Relational schemas, PL/SQL routines, logs, constraints |
 | **Runtime** | Docker, Docker Compose | Local containerized services and database persistence |
 
 ---
@@ -71,8 +71,8 @@ The application incorporates state-of-the-art e-commerce and database administra
 │   │   └── pages/           # Portal page views (Shop, MyOrders, Products, Dashboard, etc.)
 │   └── tailwind.config.js   # Tailored theme color config
 ├── queries/
-│   ├── auth.sql             # PL/pgSQL staff auth functions (login, logout, validation)
-│   ├── customer_auth.sql    # PL/pgSQL customer auth tables, triggers, and functions
+│   ├── auth.sql             # Oracle PL/SQL staff auth functions (login, logout, validation)
+│   ├── customer_auth.sql    # Oracle PL/SQL customer auth tables and functions
 │   ├── permissions.sql      # Permission checking engine and security views
 │   ├── test_login.sql       # SQL unit tests for login transactions
 │   └── test_permissions.sql # SQL unit tests for RBAC role permissions
@@ -91,13 +91,13 @@ The system deploys 3 isolated Docker services in a shared network bridge:
 graph TD
     Client[Browser UI] -->|Port 5173| Frontend[Vite React Container]
     Client -->|Port 8001| Backend[FastAPI Backend Container]
-    Backend -->|Port 5432| DB[PostgreSQL 16 Database]
+    Backend -->|Port 1521| DB[Oracle Database Free 23ai]
     Frontend -->|Proxy /api/*| Backend
 ```
 
 | Service | Container Role | Host Port | Internal Port |
 | --- | --- | --- | --- |
-| **`db`** | PostgreSQL database | `5432` | `5432` |
+| **`db`** | Oracle database | `1521` | `1521` |
 | **`backend`** | FastAPI Web server | `8001` | `8000` |
 | **`frontend`** | Vite dev server | `5173` | `5173` |
 
@@ -105,12 +105,12 @@ graph TD
 
 ## Database Initialization Flow
 
-When the `db` service container boots for the first time, it executes files inside `/docker-entrypoint-initdb.d/` in alphanumeric order:
+When the `db` service container boots for the first time, it executes files inside `/container-entrypoint-initdb.d/` in alphanumeric order:
 
 1. **`schema/schema.sql`**
    Defines relational tables (`roles`, `users`, `sessions`, `categories`, `products`, `product_images`, `customers`, `customer_sessions`, `orders`, `order_items`, `invoices`, `audit_logs`, `system_config`) with strict triggers, foreign keys, and indexes.
 2. **`queries/auth.sql`**
-   Creates PL/pgSQL functions that manage secure staff sessions:
+   Creates Oracle PL/SQL functions that manage secure staff sessions:
    * `fn_login(username, password_hash, ip)`: Starts a secure transaction, checks MD5 credentials, deactivates prior sessions, and issues a session token.
    * `fn_validate_session(token)`: Validates the token against expiration, updates `last_login`, and returns user role.
    * `fn_logout(token)`: Explicitly closes and deletes a session.
@@ -125,7 +125,7 @@ When the `db` service container boots for the first time, it executes files insi
    * `v_role_permissions`: View mapped roles to permission flags.
    * `v_active_sessions`: Audit view of currently running user sessions.
 5. **`data/seed.sql`**
-   Seeds initial records into PostgreSQL: categories, suppliers, demo users, product listings, images, orders, invoices, and system configuration.
+   Seeds initial records into Oracle: categories, suppliers, demo users, product listings, images, orders, invoices, and system configuration.
 
 ---
 
@@ -217,7 +217,7 @@ Manage staff status and credentials directly from the host terminal:
 # List all registered staff accounts
 docker compose exec backend python manage_staff.py --list
 
-# Sync the staff list inside manage_staff.py with PostgreSQL
+# Sync the staff list inside manage_staff.py with Oracle
 docker compose exec backend python manage_staff.py
 
 # Deactivate (disable) an account
@@ -234,11 +234,11 @@ docker compose exec backend python manage_staff.py --activate user_01
 Validate that all backend controllers and database procedures operate perfectly:
 
 ```bash
-# Run PL/pgSQL stored transaction tests
-docker compose exec -T db psql -U postgres -d sentineldb -f /queries/test_login.sql
+# Run Oracle PL/SQL stored transaction tests
+docker compose exec -T db sqlplus -s sentineldb/sentinelpass@//localhost/FREEPDB1 @/queries/test_login.sql
 
-# Run PL/pgSQL stored RBAC permission tests
-docker compose exec -T db psql -U postgres -d sentineldb -f /queries/test_permissions.sql
+# Run Oracle PL/SQL stored RBAC permission tests
+docker compose exec -T db sqlplus -s sentineldb/sentinelpass@//localhost/FREEPDB1 @/queries/test_permissions.sql
 
 # Run the complete end-to-end API Smoke Test Suite (checks 25 critical paths)
 node scripts/smoke_api.mjs

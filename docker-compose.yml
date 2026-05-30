@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# SentinelDB — Docker Compose (full stack)
+# SentinelDB - Docker Compose (full stack)
 #
 # Usage:
 #   docker compose up --build        ← first run (builds images + inits DB)
@@ -7,37 +7,38 @@
 #   docker compose down -v           ← tear down + wipe DB volume
 #
 # Services:
-#   db       — PostgreSQL 16 (port 5432)
-#   backend  — FastAPI / uvicorn    (host port 8001)
-#   frontend — Vite React dev       (port 5173)
+#   db       - Oracle Database Free 23ai (port 1521)
+#   backend  - FastAPI / uvicorn        (host port 8001)
+#   frontend - Vite React dev           (port 5173)
 # ─────────────────────────────────────────────────────────────
 
 services:
-  # ── PostgreSQL ──────────────────────────────────────────────
+  # ── Oracle Database ─────────────────────────────────────────
   db:
-    image: postgres:16-alpine
+    image: gvenzl/oracle-free:23-slim
     restart: unless-stopped
     environment:
-      POSTGRES_DB: sentineldb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      ORACLE_PASSWORD: oraclepass
+      APP_USER: sentineldb
+      APP_USER_PASSWORD: sentinelpass
     ports:
-      - "5432:5432"
+      - "1521:1521"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - oracledata:/opt/oracle/oradata
       # Init scripts run once (alphabetical) on first start
-      - ./schema/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - ./queries/auth.sql:/docker-entrypoint-initdb.d/02_auth.sql:ro
-      - ./queries/customer_auth.sql:/docker-entrypoint-initdb.d/03_customer_auth.sql:ro
-      - ./queries/permissions.sql:/docker-entrypoint-initdb.d/04_permissions.sql:ro
-      - ./data/seed.sql:/docker-entrypoint-initdb.d/05_seed.sql:ro
+      - ./schema/schema.sql:/container-entrypoint-initdb.d/01_schema.sql:ro
+      - ./queries/auth.sql:/container-entrypoint-initdb.d/02_auth.sql:ro
+      - ./queries/customer_auth.sql:/container-entrypoint-initdb.d/03_customer_auth.sql:ro
+      - ./queries/permissions.sql:/container-entrypoint-initdb.d/04_permissions.sql:ro
+      - ./data/seed.sql:/container-entrypoint-initdb.d/05_seed.sql:ro
       # Keep SQL test scripts available after init for manual verification
       - ./queries:/queries:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d sentineldb"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   # ── FastAPI Backend ─────────────────────────────────────────
   backend:
@@ -48,7 +49,9 @@ services:
     ports:
       - "8001:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/sentineldb
+      ORACLE_USER: sentineldb
+      ORACLE_PASSWORD: sentinelpass
+      ORACLE_DSN: db:1521/FREEPDB1
       FRONTEND_ORIGIN: http://localhost:5173
     depends_on:
       db:
@@ -70,5 +73,5 @@ services:
       - backend
 
 volumes:
-  pgdata:
+  oracledata:
   product_images:

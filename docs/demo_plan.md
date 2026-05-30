@@ -1,11 +1,11 @@
 # SentinelDB — Demo Stack Plan (Backend + Frontend)
 
-**Goal:** Build a working web demo on top of the existing SentinelDB PostgreSQL
+**Goal:** Build a working web demo on top of the existing SentinelDB Oracle
 schema, showing how each role experiences a different application based purely
 on RBAC checks.
 
 **Approach:** DB-centric. The FastAPI backend is a thin HTTP wrapper that
-delegates authentication and permission checks to the existing PL/pgSQL
+delegates authentication and permission checks to the existing PL/SQL
 functions (`fn_login`, `fn_validate_session`, `fn_logout`,
 `fn_check_permission`). All RBAC logic stays in the database — the API just
 exposes it over HTTP.
@@ -16,10 +16,10 @@ exposes it over HTTP.
 
 ```
 ┌────────────────┐     HTTP/JSON     ┌────────────────┐    SQL    ┌──────────────┐
-│  React (Vite)  │ ───────────────▶ │   FastAPI       │ ────────▶ │  PostgreSQL  │
-│  Tailwind CSS  │ ◀─────────────── │   psycopg3      │ ◀──────── │  SentinelDB  │
+│  React (Vite)  │ ───────────────▶ │   FastAPI       │ ────────▶ │    Oracle    │
+│  Tailwind CSS  │ ◀─────────────── │ python-oracledb │ ◀──────── │  SentinelDB  │
 └────────────────┘   Bearer token    └────────────────┘   fn_*     └──────────────┘
-       :5173                            :8000                       :5432
+       :5173                            :8000                       :1521
 ```
 
 - **Token format:** opaque session hash (the 32-char MD5 returned by
@@ -37,7 +37,7 @@ exposes it over HTTP.
 | Component | Choice | Why |
 |---|---|---|
 | Framework | **FastAPI** | Async, auto-generated OpenAPI docs, Pydantic validation |
-| DB driver | **psycopg** (v3) | Modern PostgreSQL driver; raw SQL fits the DB-centric model |
+| DB driver | **python-oracledb** | Oracle driver; raw SQL fits the DB-centric model |
 | Schemas | **Pydantic v2** | Request/response validation |
 | Server | **uvicorn** | Standard FastAPI server |
 | Env | `python-dotenv` | DB credentials in `.env` |
@@ -73,10 +73,10 @@ No new schema needed. The backend uses what exists:
 
 ```
 backend/
-├── .env                          # DB_URL=postgresql://user:pw@localhost/sentineldb
+├── .env                          # ORACLE_DSN=localhost:1521/FREEPDB1
 ├── requirements.txt
 ├── main.py                       # FastAPI app + route registration
-├── db.py                         # psycopg connection pool
+├── db.py                         # python-oracledb connection pool
 ├── deps.py                       # auth/permission Depends() factories
 ├── schemas.py                    # Pydantic models (LoginRequest, UserOut, etc.)
 └── routers/
@@ -349,7 +349,7 @@ Each phase is one focused chunk of work, runnable on its own.
 
 ## 8. Open Questions Before Implementation
 
-- [ ] Database connection: local PostgreSQL or Docker?
+- [ ] Database connection: local Oracle or Docker?
 - [ ] Should the React `Login` page include the 4 quick-login buttons by
       default, or only in dev mode?
 - [ ] CORS origin — confirm `http://localhost:5173`.

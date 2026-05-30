@@ -1,6 +1,6 @@
 """FastAPI dependencies for auth + RBAC.
 
-All RBAC logic delegates to the database PL/pgSQL functions:
+All RBAC logic delegates to the database PL/SQL functions:
     fn_validate_session(token)            → returns user + role flags
     fn_check_permission(token, module)    → returns boolean
 """
@@ -49,7 +49,7 @@ def require(module: str):
         db=Depends(get_db),
     ) -> dict:
         with db.cursor() as cur:
-            cur.execute("SELECT fn_check_permission(%s, %s)", (user["token"], module))
+            cur.execute("SELECT fn_check_permission(%s, %s) AS fn_check_permission", (user["token"], module))
             allowed = cur.fetchone()["fn_check_permission"]
         if not allowed:
             raise HTTPException(

@@ -1,6 +1,6 @@
 """Customer self-service authentication endpoints.
 
-All credential checks delegate to the PL/pgSQL functions:
+All credential checks delegate to the Oracle PL/SQL functions:
     fn_customer_signup           → creates account + opens session
     fn_customer_login            → credential check + opens session
     fn_customer_validate_session → used by get_current_customer dep
@@ -12,9 +12,8 @@ Password handling: same md5(plaintext) convention as the staff auth router.
 import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from psycopg import errors
 
-from db import get_db
+from db import DatabaseError, db_error_message, get_db
 from deps import extract_bearer, get_current_customer
 from schemas import (
     CustomerInfo,
@@ -43,8 +42,8 @@ def signup(req: CustomerSignupRequest, request: Request, db=Depends(get_db)):
                 (req.email, pw_hash, req.full_name, req.phone, client_ip),
             )
             row = cur.fetchone()
-    except errors.RaiseException as e:
-        msg = e.diag.message_primary or "Signup failed"
+    except DatabaseError as e:
+        msg = db_error_message(e) or "Signup failed"
         raise HTTPException(status_code=400, detail=msg) from e
 
     db.commit()
@@ -71,8 +70,8 @@ def login(req: CustomerLoginRequest, request: Request, db=Depends(get_db)):
                 (req.email, pw_hash, client_ip),
             )
             row = cur.fetchone()
-    except errors.RaiseException as e:
-        msg = e.diag.message_primary or "Authentication failed"
+    except DatabaseError as e:
+        msg = db_error_message(e) or "Authentication failed"
         raise HTTPException(status_code=401, detail=msg) from e
 
     if not row:

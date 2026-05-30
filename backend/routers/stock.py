@@ -9,9 +9,8 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from psycopg import errors
 
-from db import get_db
+from db import DatabaseIntegrityError, get_db, is_foreign_key_violation
 from deps import require
 from schemas import (
     CategoryOut,
@@ -66,9 +65,14 @@ def _register_product_image(cur, label: str, image_url: str | None, source: str 
         return
     cur.execute(
         """
-        INSERT INTO product_images (label, image_url, source)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (image_url) DO NOTHING
+        MERGE INTO product_images target
+        USING (
+            SELECT %s AS label, %s AS image_url, %s AS source FROM dual
+        ) source
+        ON (target.image_url = source.image_url)
+        WHEN NOT MATCHED THEN
+            INSERT (label, image_url, source)
+            VALUES (source.label, source.image_url, source.source)
         """,
         (label, image_url, source),
     )
@@ -88,7 +92,7 @@ def list_products(
     with db.cursor() as cur:
         sql = PRODUCT_SELECT
         if active_only:
-            sql += " WHERE p.is_active = TRUE"
+            sql += " WHERE p.is_active = 1"
         sql += " ORDER BY c.name NULLS LAST, p.name"
         cur.execute(sql)
         return cur.fetchall()
@@ -105,7 +109,7 @@ def low_stock(
         cur.execute(
             PRODUCT_SELECT
             + """
-            WHERE p.is_active = TRUE
+            WHERE p.is_active = 1
               AND p.stock_qty < %s
             ORDER BY p.stock_qty ASC
             """,
@@ -127,13 +131,15 @@ def create_product(
             cur.execute(
                 """
                 INSERT INTO products (name, category_id, price, stock_qty, supplier_id, image_url, is_active)
-                VALUES (%s, %s, %s, %s, %s, %s, TRUE)
+                VALUES (%s, %s, %s, %s, %s, %s, 1)
                 RETURNING product_id
                 """,
                 (body.name, body.category_id, body.price, body.stock_qty, body.supplier_id, image_url),
             )
-        except errors.ForeignKeyViolation as e:
-            raise HTTPException(status_code=400, detail="Invalid category_id or supplier_id") from e
+        except DatabaseIntegrityError as e:
+            if is_foreign_key_violation(e):
+                raise HTTPException(status_code=400, detail="Invalid category_id or supplier_id") from e
+            raise
 
         product_id = cur.fetchone()["product_id"]
         _register_product_image(cur, body.name, image_url, "Registered during product create")
@@ -210,7 +216,7 @@ def discontinue_product(
     """S10 — mark a product inactive (discontinued)."""
     with db.cursor() as cur:
         cur.execute(
-            "UPDATE products SET is_active = FALSE WHERE product_id = %s",
+            "UPDATE products SET is_active = 0 WHERE product_id = %s",
             (product_id,),
         )
         if cur.rowcount == 0:
@@ -229,7 +235,7 @@ def reactivate_product(
     """Re-activate a previously discontinued product."""
     with db.cursor() as cur:
         cur.execute(
-            "UPDATE products SET is_active = TRUE WHERE product_id = %s",
+            "UPDATE products SET is_active = 1 WHERE product_id = %s",
             (product_id,),
         )
         if cur.rowcount == 0:

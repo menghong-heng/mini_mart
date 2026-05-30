@@ -130,7 +130,7 @@ User:
 NOTES
 -----
 
-- Staff passwords are stored in PostgreSQL as MD5 hashes for demo purposes.
+- Staff passwords are stored in Oracle as MD5 hashes for demo purposes.
 - Staff accounts are seeded by data/seed.sql on a fresh database.
 - Staff accounts can be synced into an existing database with:
   docker compose exec backend python manage_staff.py
