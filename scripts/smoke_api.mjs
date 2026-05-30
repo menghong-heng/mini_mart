@@ -158,10 +158,10 @@ async function main() {
     await request(API, "/api/suppliers", { token, label: "list suppliers" });
     const imageLibrary = await request(API, "/api/product-images", { token, label: "list product image library" });
 
-    const imageBytes = await readFile(new URL("../frontend/public/logo.png", import.meta.url));
+    const imageBytes = await readFile(new URL("../frontend/public/product-images/wireless-mouse.jpg", import.meta.url));
     const uploadForm = new FormData();
     uploadForm.append("label", `Smoke Image ${runId}`);
-    uploadForm.append("file", new Blob([imageBytes], { type: "image/png" }), `smoke-image-${runId}.png`);
+    uploadForm.append("file", new Blob([imageBytes], { type: "image/jpeg" }), `smoke-image-${runId}.jpg`);
     const uploadedImage = await request(API, "/api/product-images", {
       method: "POST",
       token,
